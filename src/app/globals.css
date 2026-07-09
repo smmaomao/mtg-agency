@@ -1,0 +1,198 @@
+@import "tailwindcss";
+
+/* ===== Theme Tokens ===== */
+@theme {
+  --color-black: #0a0a0b;
+  --color-zinc-975: #0d0d0f;
+  --color-zinc-950: #111114;
+  --color-zinc-925: #18181b;
+  --color-zinc-900: #1f1f23;
+  --color-zinc-850: #252529;
+  --color-zinc-800: #2e2e33;
+  --color-zinc-700: #3c3c42;
+  --color-zinc-600: #4e4e56;
+  --color-zinc-500: #64646d;
+  --color-zinc-400: #7a7a84;
+  --color-zinc-300: #a3a3ab;
+  --color-zinc-200: #cacae1;
+  --color-zinc-100: #d4d4dc;
+  --color-white: #fafafa;
+  --color-amber-500: #e8a840;
+  --color-amber-400: #edb84a;
+  --color-amber-300: #f0c86e;
+  --color-red-500: #ef4444;
+  --color-red-400: #f87171;
+  --color-red-950: #1c0a0e;
+  --color-green-500: #22c55e;
+  --color-green-400: #4ade80;
+  --color-green-950: #052e16;
+  --font-sans: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', 'Hiragino Sans GB', 'Source Han Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ===== Base ===== */
+body {
+  background-color: var(--color-black);
+  color: var(--color-zinc-100);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 页面主标题（白底）统一为黑色。无层规则优先级高于 Tailwind 工具类，
+   故此处直接设定，避免被默认色覆盖导致标题发灰 */
+h1 {
+  color: #000;
+}
+
+/* 浅色卡片 / 弹窗 / 顶栏（白底、浅灰底、半透明白）内的灰色文字统一加深，
+   保证可读。删除类按钮（hover 变红）故意排除，以保留其 hover 反馈。 */
+[class~="bg-white"] [class~="text-gray-400"]:not([class*="hover:text-red-400"]),
+[class~="bg-white"][class~="text-gray-400"]:not([class*="hover:text-red-400"]),
+[class~="bg-white"] [class~="text-gray-500"]:not([class*="hover:text-red-400"]),
+[class~="bg-white"][class~="text-gray-500"]:not([class*="hover:text-red-400"]),
+[class~="bg-white"] [class~="text-gray-300"]:not([class*="hover:text-red-400"]),
+[class~="bg-white"] [class~="text-zinc-500"]:not([class*="hover:text-red-400"]),
+[class~="bg-white/70"] [class~="text-gray-400"]:not([class*="hover:text-red-400"]),
+[class~="bg-white/70"] [class~="text-gray-500"]:not([class*="hover:text-red-400"]),
+[class~="bg-white/70"] [class~="text-zinc-500"]:not([class*="hover:text-red-400"]),
+[class~="bg-white/50"] [class~="text-gray-400"]:not([class*="hover:text-red-400"]),
+[class~="bg-white/50"] [class~="text-gray-500"]:not([class*="hover:text-red-400"]),
+[class~="bg-gray-100"] [class~="text-gray-400"]:not([class*="hover:text-red-400"]),
+[class~="bg-gray-100"][class~="text-gray-400"]:not([class*="hover:text-red-400"]),
+[class~="bg-gray-100"] [class~="text-gray-500"]:not([class*="hover:text-red-400"]) {
+  color: var(--color-zinc-600) !important;
+}
+
+/* 弹窗主操作按钮：原先「极淡琥珀底 + 亮琥珀字」对比度过低（约 1.9），
+   改为实色琥珀底 + 深色字，保证清晰。（仅匹配淡琥珀底+亮琥珀字，避开登录页图标框） */
+[class*="bg-amber-500/10"][class*="text-amber-500"] {
+  background-color: var(--color-amber-500) !important;
+  color: var(--color-zinc-900) !important;
+}
+
+/* 极淡琥珀底上的亮琥珀标签文字，加深以保证可读 */
+[class*="bg-amber-500/10"][class*="text-amber-400"] {
+  color: var(--color-zinc-700) !important;
+}
+
+/* ===== Noise Texture Overlay ===== */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-zinc-700);
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-zinc-500);
+}
+
+/* ===== Selection ===== */
+::selection {
+  background: var(--color-amber-500);
+  color: var(--color-black);
+}
+
+/* ===== Focus Ring ===== */
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--color-amber-500);
+}
+
+/* ===== Input Reset ===== */
+input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* ===== Unified Form Controls（输入框 / 下拉框统一）=====
+   统一三项：框高度、圆角、字体大小；并统一焦点样式与下拉箭头。
+   背景/边框颜色保留各页面原有风格，只统一“盒子”结构。            */
+input,
+select,
+textarea {
+  height: 34px;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  line-height: 1.4;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box;
+}
+
+/* 下拉框：去掉原生箭头，统一右侧 SVG 箭头 */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a3a3ab' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px 14px;
+}
+select[multiple] {
+  height: auto;
+  padding-right: 10px;
+  background-image: none;
+}
+
+/* 多行文本不锁死高度 */
+textarea {
+  height: auto !important;
+  min-height: 64px;
+  padding: 8px 10px !important;
+  resize: vertical;
+}
+
+/* 特殊类型输入框还原为浏览器默认外观，避免被统一规则破坏 */
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"],
+input[type="range"],
+input[type="color"] {
+  height: auto !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  appearance: auto !important;
+  background: none !important;
+  font-size: inherit !important;
+}
+
+/* 统一焦点样式 */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-amber-500);
+  box-shadow: 0 0 0 1px var(--color-amber-500);
+}
+
+/* 登录页 hero 输入框保持原有大尺寸，不参与统一（避免左侧图标错位） */
+.hero-input {
+  height: auto !important;
+  padding: 0.875rem 1rem 0.875rem 3rem !important;
+  font-size: 1rem !important;
+  border-radius: 0.5rem !important;
+}
