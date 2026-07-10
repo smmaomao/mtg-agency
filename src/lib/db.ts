@@ -22,16 +22,25 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 })
 
-// [DEBUG] 打印部署环境实际解析到的连接配置（密码仅显示长度，便于排查 Vercel 环境变量问题）
-console.log('[DB DEBUG]', {
-  usingConnectionString: !!process.env.DATABASE_URL,
-  host: poolConfig.host || '(from connectionString)',
-  port: (poolConfig as any).port,
-  database: (poolConfig as any).database,
-  user: (poolConfig as any).user,
-  passwordLength: (poolConfig as any).password ? String((poolConfig as any).password).length : 0,
-  ssl: !!(poolConfig as any).ssl,
-})
+// [DEBUG] 完整的连接配置快照
+const _pw = (poolConfig as any).password || ''
+console.log('[DB DEBUG] ========== 连接配置 ==========')
+console.log('[DB DEBUG] isLocal:', isLocal)
+console.log('[DB DEBUG] usingConnectionString:', !!process.env.DATABASE_URL)
+console.log('[DB DEBUG] host:', (poolConfig as any).host || '(from connectionString)')
+console.log('[DB DEBUG] port:', (poolConfig as any).port)
+console.log('[DB DEBUG] database:', (poolConfig as any).database)
+console.log('[DB DEBUG] user:', (poolConfig as any).user)
+console.log('[DB DEBUG] password:', _pw ? `${_pw.substring(0, 2)}***${_pw.substring(_pw.length - 2)}` : '(empty)')
+console.log('[DB DEBUG] password length:', _pw.length)
+console.log('[DB DEBUG] ssl:', JSON.stringify((poolConfig as any).ssl))
+console.log('[DB DEBUG] DB_HOST raw value:', process.env.DB_HOST)
+console.log('[DB DEBUG] DB_PORT raw value:', process.env.DB_PORT)
+console.log('[DB DEBUG] DB_NAME raw value:', process.env.DB_NAME)
+console.log('[DB DEBUG] DB_USER raw value:', process.env.DB_USER)
+console.log('[DB DEBUG] DB_PASSWORD set:', !!process.env.DB_PASSWORD)
+console.log('[DB DEBUG] DATABASE_URL set:', !!process.env.DATABASE_URL)
+console.log('[DB DEBUG] ================================')
 
 /**
  * 查询多行
