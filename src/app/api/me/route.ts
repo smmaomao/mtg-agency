@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
+import { queryOne } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-import { supabase } from '@/lib/supabase/server'
 
 export async function GET() {
   const session = await getSession()
@@ -8,22 +8,16 @@ export async function GET() {
     return NextResponse.json({ user: null })
   }
 
-  // Fetch role info from database
   let role_name = ''
   let menu_permissions: number[] = []
   if (session.role_id) {
-    try {
-      const { data } = await supabase
-        .from('admin_roles')
-        .select('name, menu_permissions')
-        .eq('id', session.role_id)
-        .single()
-      if (data) {
-        role_name = data.name || ''
-        menu_permissions = data.menu_permissions || []
-      }
-    } catch {
-      // ignore
+    const role = await queryOne<{ name: string; menu_permissions: number[] }>(
+      'SELECT name, menu_permissions FROM mtg_agency.admin_roles WHERE id = $1',
+      [session.role_id]
+    )
+    if (role) {
+      role_name = role.name || ''
+      menu_permissions = role.menu_permissions || []
     }
   }
 

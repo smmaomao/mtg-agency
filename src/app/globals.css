@@ -32,6 +32,32 @@
   --font-heading: 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* ===== Theme: primary color =====
+   同时驱动「菜单选中色」与「创建/保存按钮底色」。由 dashboard 根节点的
+   [data-theme] 决定；默认（含 :root）为橙色。 */
+:root,
+[data-theme="orange"] {
+  --primary: var(--color-amber-500);       /* #e8a840 */
+  --primary-hover: var(--color-amber-400);  /* #edb84a */
+  --primary-foreground: var(--color-zinc-900);
+  --primary-soft: rgba(232, 168, 64, 0.12);   /* 浅底色（图标框等） */
+  --primary-border: rgba(232, 168, 64, 0.25); /* 浅描边 */
+}
+[data-theme="purple"] {
+  --primary: #a855f7;        /* violet-500 */
+  --primary-hover: #9333ea;  /* violet-600 */
+  --primary-foreground: #ffffff;
+  --primary-soft: rgba(168, 85, 247, 0.12);
+  --primary-border: rgba(168, 85, 247, 0.25);
+}
+[data-theme="blue"] {
+  --primary: #3b82f6;        /* blue-500 */
+  --primary-hover: #2563eb;  /* blue-600 */
+  --primary-foreground: #ffffff;
+  --primary-soft: rgba(59, 130, 246, 0.12);
+  --primary-border: rgba(59, 130, 246, 0.25);
+}
+
 /* ===== Base ===== */
 body {
   background-color: var(--color-black);
@@ -68,28 +94,21 @@ h1 {
   color: var(--color-zinc-600) !important;
 }
 
-/* 弹窗主操作按钮：原先「极淡琥珀底 + 亮琥珀字」对比度过低（约 1.9），
-   改为实色琥珀底 + 深色字，保证清晰。（仅匹配淡琥珀底+亮琥珀字，避开登录页图标框） */
+/* 弹窗主操作按钮（创建/保存）：实色主题 primary 底 + 前景色字，跟随主题切换。
+   （仅匹配淡琥珀底+亮琥珀字这组约定类名，避开登录页图标框） */
 [class*="bg-amber-500/10"][class*="text-amber-500"] {
-  background-color: var(--color-amber-500) !important;
-  color: var(--color-zinc-900) !important;
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+[class*="bg-amber-500/10"][class*="text-amber-500"]:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
 }
 
 /* 极淡琥珀底上的亮琥珀标签文字，加深以保证可读 */
 [class*="bg-amber-500/10"][class*="text-amber-400"] {
   color: var(--color-zinc-700) !important;
-}
-
-/* ===== Noise Texture Overlay ===== */
-.noise-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 256px 256px;
 }
 
 /* ===== Scrollbar ===== */

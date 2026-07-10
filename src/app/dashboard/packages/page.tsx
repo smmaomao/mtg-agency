@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCached } from '@/lib/apiCache'
 import RefreshButton from '@/components/RefreshButton'
 import Pagination from '@/components/Pagination'
 import { Modal } from '@/components/Modal'
@@ -20,7 +19,7 @@ interface AppPackage {
   package_name: string | null
   landing_page_url: string | null
   created_at: string
-  products: { name: string } | null
+  product_name: string | null
 }
 
 const defaultForm = {
@@ -79,7 +78,6 @@ export default function PackagesPage() {
       platform: form.platform,
       version: form.version || null,
       download_url: form.download_url || null,
-      icon_url: form.icon_url || null,
       package_name: form.package_name || null,
       landing_page_url: form.landing_page_url || null,
       remark: form.remark || null,
@@ -139,21 +137,19 @@ export default function PackagesPage() {
                 <th className="py-2.5 font-medium text-[13px] text-black">产品</th>
                 <th className="py-2.5 font-medium text-[13px] text-black">包名</th>
                 <th className="py-2.5 font-medium text-[13px] text-black">平台</th>
-                <th className="py-2.5 font-medium text-[13px] text-black">版本</th>
                 <th className="py-2.5 pr-4 font-medium text-right text-[13px] text-black">操作</th>
               </tr>
             </thead>
             <tbody>
               {packages.length === 0 ? (
-                <tr><td colSpan={7} className="py-16 text-center text-[15px] text-gray-400">暂无数据</td></tr>
+                <tr><td colSpan={6} className="py-16 text-center text-[15px] text-gray-400">暂无数据</td></tr>
               ) : packages.map(p => (
                 <tr key={p.id} className="border-b border-gray-200/50 text-[15px] text-gray-700 hover:bg-gray-100 transition-colors">
                   <td className="py-2.5 pl-4 font-mono text-gray-400">{p.id}</td>
                   <td className="py-2.5 font-medium text-gray-800">{p.name}</td>
-                  <td className="py-2.5">{p.products?.name || '-'}</td>
+                  <td className="py-2.5">{p.product_name || '-'}</td>
                   <td className="py-2.5 font-mono text-gray-400">{p.package_name || '-'}</td>
                   <td className="py-2.5">{p.platform || '-'}</td>
-                  <td className="py-2.5 font-mono text-gray-500">{p.version || '-'}</td>
                   <td className="py-2.5 pr-4 text-right">
                     <button onClick={() => openEdit(p)} className="text-zinc-500 hover:text-gray-800 mr-2">编辑</button>
                     <button onClick={() => handleDelete(p.id)} className="text-zinc-600 hover:text-red-400">删除</button>
@@ -195,13 +191,12 @@ export default function PackagesPage() {
             </Field>
             <Field label="下载地址" value={form.download_url} onChange={e => setForm({ ...form, download_url: e.target.value })} placeholder="https://..." />
             <Field label="落地页地址" value={form.landing_page_url} onChange={e => setForm({ ...form, landing_page_url: e.target.value })} placeholder="https://..." />
-            <Field label="Icon URL" value={form.icon_url} onChange={e => setForm({ ...form, icon_url: e.target.value })} placeholder="https://..." />
             <Field label="备注">
               <textarea value={form.remark} onChange={e => setForm({ ...form, remark: e.target.value })} rows={2} className="focus-ring w-full rounded-full border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-800 placeholder-gray-400 outline-none transition-colors hover:border-gray-300" />
             </Field>
-            <div className="flex gap-2 pt-2">
-              <button type="button" onClick={() => setShowModal(false)} className="focus-ring flex-1 rounded-full border border-gray-200 bg-transparent py-2 text-[10px] font-medium tracking-wide text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-800">取消</button>
-              <button type="submit" className="focus-ring flex-1 rounded-full border border-amber-500/30 bg-amber-500/10 py-2 text-[10px] font-medium tracking-wide text-amber-500 transition-all hover:border-amber-500/50 hover:bg-amber-500/15">{editing ? '保存' : '创建'}</button>
+            <div className="flex justify-end gap-2 pt-2">
+              <button type="button" onClick={() => setShowModal(false)} className="focus-ring rounded-full border border-gray-300 bg-white px-5 py-2 text-[13px] font-medium tracking-wide text-gray-700 transition-colors hover:bg-gray-50">取消</button>
+              <button type="submit" className="focus-ring rounded-full border border-amber-500/30 bg-amber-500/10 px-5 py-2 text-[13px] font-medium tracking-wide text-amber-500 transition-all hover:border-amber-500/50 hover:bg-amber-500/15">保存</button>
             </div>
           </form>
         </Modal>

@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getCached } from '@/lib/apiCache'
 import RefreshButton from '@/components/RefreshButton'
 import Pagination from '@/components/Pagination'
 import { Modal } from '@/components/Modal'
 import { Field } from '@/components/Field'
+import { CountrySelect } from '@/components/CountrySelect'
+import { countryLabels, countryLabel } from '@/lib/countries'
 
 interface Customer { id: number; name: string }
 interface Product {
@@ -18,11 +19,11 @@ interface Product {
   description: string | null
   countries: string[] | null
   created_at: string
-  customers: { name: string } | null
+  customer_name: string | null
 }
 
 const defaultForm = {
-  name: '', customer_id: '', product_type: 'game', remark: '', icon_url: '', description: '', countries: '',
+  name: '', customer_id: '', product_type: 'game', remark: '', icon_url: '', description: '', countries: [] as string[],
 }
 const productTypes = ['game', 'app', 'tool', 'other']
 
@@ -61,14 +62,13 @@ export default function ProductsPage() {
     setForm({
       name: p.name, customer_id: String(p.customer_id), product_type: p.product_type || 'game',
       remark: p.remark || '', icon_url: p.icon_url || '', description: p.description || '',
-      countries: p.countries?.join(', ') || '',
+      countries: p.countries || [],
     })
      setMessage(''); loadCustomers(); setShowModal(true)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const countries = form.countries ? form.countries.split(',').map(s => s.trim()).filter(Boolean) : null
     const body = {
       name: form.name,
       customer_id: parseInt(form.customer_id),
@@ -76,7 +76,7 @@ export default function ProductsPage() {
       remark: form.remark || null,
       icon_url: form.icon_url || null,
       description: form.description || null,
-      countries,
+      countries: form.countries.length ? form.countries : null,
     }
     const method = editing ? 'PUT' : 'POST'
     const payload = editing ? { ...body, id: editing.id } : body
@@ -133,7 +133,7 @@ export default function ProductsPage() {
                 <th className="py-2.5 font-medium text-[13px] text-black">客户</th>
                 <th className="py-2.5 font-medium text-[13px] text-black">类型</th>
                 <th className="py-2.5 font-medium text-[13px] text-black">地区</th>
-                <th className="py-2.5 font-medium text-[13px] text-black">描述</th>
+                <th className="py-2.5 font-medium text-[13px] text-black">简介</th>
                 <th className="py-2.5 pr-4 font-medium text-right text-[13px] text-black">操作</th>
               </tr>
             </thead>
@@ -144,11 +144,11 @@ export default function ProductsPage() {
                 <tr key={p.id} className="border-b border-gray-200/50 text-[15px] text-gray-700 hover:bg-gray-100 transition-colors">
                   <td className="py-2.5 pl-4 font-mono text-gray-400">{p.id}</td>
                   <td className="py-2.5 font-medium text-gray-800">{p.name}</td>
-                  <td className="py-2.5">{p.customers?.name || '-'}</td>
+                  <td className="py-2.5">{p.customer_name || '-'}</td>
                   <td className="py-2.5">
                     <span className="rounded-sm bg-gray-100 px-1.5 py-0.5 text-[15px] text-gray-500">{p.product_type || '-'}</span>
                   </td>
-                  <td className="py-2.5">{(p.countries && p.countries.length > 0) ? p.countries.join(', ') : '-'}</td>
+                  <td className="py-2.5">{countryLabels(p.countries)}</td>
                   <td className="py-2.5 max-w-[200px] truncate text-gray-400">{p.description || '-'}</td>
                   <td className="py-2.5 pr-4 text-right">
                     <button onClick={() => openEdit(p)} className="text-zinc-500 hover:text-gray-800 mr-2">编辑</button>
@@ -182,17 +182,40 @@ export default function ProductsPage() {
               {productTypes.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </Field>
-          <Field label="地区 (多选用逗号分隔)" value={form.countries} onChange={e => setForm({ ...form, countries: e.target.value })} placeholder="中国, 美国, 日本" />
-          <Field label="Icon URL" value={form.icon_url} onChange={e => setForm({ ...form, icon_url: e.target.value })} />
-          <Field label="描述">
+          <Field label="地区 (可多选)">
+            <CountrySelect multiple value={form.countries} onChange={codes => setForm({ ...form, countries: codes as string[] })} />
+          </Field>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px]">
+            <span className="text-gray-400">已选国家：</span>
+            {form.countries.length === 0 ? (
+              <span className="text-gray-300">未选择</span>
+            ) : (
+              form.countries.map(code => (
+                <span key={code} className="relative inline-flex items-center">
+                  <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-blue-600">{countryLabel(code)}</span>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, countries: form.countries.filter(c => c !== code) })}
+                    aria-label={`移除 ${countryLabel(code)}`}
+                    className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 bg-white text-gray-400 shadow-sm transition-colors hover:border-red-400 hover:text-red-500"
+                  >
+                    <svg className="h-2.5 w-2.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                      <path d="M5 5l10 10M15 5L5 15" />
+                    </svg>
+                  </button>
+                </span>
+              ))
+            )}
+          </div>
+          <Field label="简介">
             <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} className="focus-ring w-full rounded-full border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-800 placeholder-gray-400 outline-none transition-colors hover:border-gray-300" />
           </Field>
           <Field label="备注">
             <textarea value={form.remark} onChange={e => setForm({ ...form, remark: e.target.value })} rows={2} className="focus-ring w-full rounded-full border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-800 placeholder-gray-400 outline-none transition-colors hover:border-gray-300" />
           </Field>
-          <div className="flex gap-2 pt-2">
-            <button type="button" onClick={() => setShowModal(false)} className="focus-ring flex-1 rounded-full border border-gray-200 bg-transparent py-2 text-[10px] font-medium tracking-wide text-gray-500 transition-colors hover:border-gray-300 hover:text-gray-800">取消</button>
-            <button type="submit" className="focus-ring flex-1 rounded-full border border-amber-500/30 bg-amber-500/10 py-2 text-[10px] font-medium tracking-wide text-amber-500 transition-all hover:border-amber-500/50 hover:bg-amber-500/15">{editing ? '保存' : '创建'}</button>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setShowModal(false)} className="focus-ring rounded-full border border-gray-300 bg-white px-5 py-2 text-[13px] font-medium tracking-wide text-gray-700 transition-colors hover:bg-gray-50">取消</button>
+            <button type="submit" className="focus-ring rounded-full border border-amber-500/30 bg-amber-500/10 px-5 py-2 text-[13px] font-medium tracking-wide text-amber-500 transition-all hover:border-amber-500/50 hover:bg-amber-500/15">保存</button>
           </div>
         </form>
       </Modal>

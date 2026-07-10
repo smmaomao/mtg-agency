@@ -24,7 +24,7 @@ interface CallbackLog {
   standard_event_code: string | null
   ip_address: string | null
   created_at: string
-  packages_dsp_mapping: { dsp_name: string; channel_name: string | null } | null
+  dsp_name: string | null
 }
 
 const eventTypes = ['install', 'register', 'login', 'create_role', 'purchase', 'retention_1d', 'retention_7d', '其他']
@@ -133,7 +133,7 @@ export default function CallbackLogsPage() {
                     </td>
                     <td className="py-2.5 font-mono text-[15px] text-gray-400">{l.standard_event_code || '-'}</td>
                     <td className="py-2.5 font-mono text-[15px] text-gray-500 max-w-[180px] truncate" title={l.click_id || ''}>{l.click_id || '-'}</td>
-                    <td className="py-2.5">{l.packages_dsp_mapping?.dsp_name || '-'}</td>
+                    <td className="py-2.5">{l.dsp_name || '-'}</td>
                     <td className="py-2.5 font-mono text-gray-500">{l.response_code || l.http_status || '-'}</td>
                     <td className="py-2.5 font-mono text-gray-500">{l.response_time != null ? `${l.response_time}ms` : '-'}</td>
                     <td className="py-2.5">
@@ -179,7 +179,7 @@ export default function CallbackLogsPage() {
                 <DetailField label="标准事件码" value={detail.standard_event_code || '-'} />
                 <DetailField label="Click ID" value={detail.click_id || '-'} mono />
                 <DetailField label="Pixel ID" value={detail.pixel_id || '-'} />
-                <DetailField label="DSP 平台" value={detail.packages_dsp_mapping?.dsp_name || '-'} />
+                <DetailField label="DSP 平台" value={detail.dsp_name || '-'} />
                 <DetailField label="包名" value={detail.package_name || '-'} mono />
                 <DetailField label="响应码" value={String(detail.response_code || detail.http_status || '-')} />
                 <DetailField label="响应耗时" value={detail.response_time != null ? `${detail.response_time}ms` : '-'} />

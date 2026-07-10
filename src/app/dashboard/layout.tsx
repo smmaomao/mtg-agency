@@ -52,6 +52,7 @@ const defaultMenus: MenuItem[] = [
   { id: 4, name: '角色管理', path: '/dashboard/roles', icon: 'shield', parent_id: 2 },
   { id: 5, name: '用户管理', path: '/dashboard/users', icon: 'users', parent_id: 2 },
   { id: 14, name: '操作日志', path: '/dashboard/audit-logs', icon: 'clipboard-list', parent_id: 2 },
+  { id: 15, name: '回传token管理', path: '/dashboard/events-whitelist', icon: 'shield-check', parent_id: 2 },
   { id: 6, name: '产品管理', path: '', icon: 'package', parent_id: 0 },
   { id: 7, name: '客户管理', path: '/dashboard/customers', icon: 'building', parent_id: 6 },
   { id: 8, name: '产品管理', path: '/dashboard/products', icon: 'box', parent_id: 6 },
@@ -90,6 +91,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [menus, setMenus] = useState<MenuItem[]>([])
   const [menusLoaded, setMenusLoaded] = useState(false)
   const [mounted, setMounted] = useState(false)
+  // 主题：菜单选中色 + 创建/保存按钮底色共用 --primary，可切换 橙/紫/蓝 三色。
+  const [theme, setTheme] = useState<'orange' | 'purple' | 'blue'>('orange')
+  // 跳过挂载瞬间的首次写入，避免把默认橙色回写、覆盖 localStorage 里已存的紫色
+  const themeInitRef = useRef(true)
   // Initialize empty so SSR and the client's first render match; restore from
   // localStorage after mount to avoid a hydration mismatch.
   const [openedTabs, setOpenedTabs] = useState<{ path: string; name: string }[]>([])
@@ -106,10 +111,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // affects the very first render (we seed activeTab from the initial pathname).
   const [activeTab, setActiveTab] = useState<string>(pathname ?? '/dashboard/menus')
 
+  // 是否已完成从 localStorage 的恢复。在恢复完成前，持久化 effect 不写入，
+  // 以免初次挂载时把内存默认值 /dashboard 覆盖掉已记住的选中项（会导致刷新后
+  // 永远回退到「菜单管理」）。
+  const restoredRef = useRef(false)
+
   useEffect(() => {
     setMounted(true)
     patchFetch()
     clearApiCache()
+
+    // 刷新前选中的菜单（URL 不随菜单变化，故用 localStorage 记忆当前 tab）。
+    // 在挂载时同步恢复，不依赖异步 fetch，避免恢复前被默认值覆盖。
+    let storedTab: string | null = null
+    try {
+      storedTab = localStorage.getItem('dashboard-active-tab')
+    } catch { /* ignore */ }
+    if (storedTab && storedTab.startsWith('/dashboard/')) {
+      setActiveTab(storedTab)
+      restoredRef.current = true
+    }
+
     Promise.all([
       fetch('/api/me').then(r => r.json()),
       fetch('/api/menus').then(r => r.json()),
@@ -119,27 +141,57 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       setMenus(allMenus)
       setMenusLoaded(true)
 
-      // 根据权限过滤菜单，找到第一个有权限的可访问页面
-      const userPerms = meData.user?.menu_permissions || []
-      const accessible = userPerms.length > 0
-        ? allMenus.filter(m => userPerms.includes(m.id) && m.path)
-        : allMenus.filter(m => m.path)
+      // 根据权限过滤菜单，找到第一个有权限的可访问页面。
+      // 注意：必须与侧边栏 filteredMenus 保持同一套权限逻辑——
+      // 超级管理员(role_id=1)或权限数组为空时取「全部菜单」，否则按 menu_permissions
+      // 过滤。否则会出现「侧边栏能显示、但刷新恢复时被 accessible 排除」的不一致
+      // （例如超级管理员的 menu_permissions 漏了操作日志 id=14，刷新会回退到第一个菜单）。
+      const userData = meData.user
+      const userPerms = userData?.menu_permissions || []
+      const isSuperAdmin = userData?.role_id === 1
+      const accessible = (isSuperAdmin || !userPerms || userPerms.length === 0)
+        ? allMenus.filter(m => m.path)
+        : allMenus.filter(m => userPerms.includes(m.id) && m.path)
 
       if (accessible.length > 0) {
         setActiveTab(prev => {
-          // 如果当前页面不在可访问列表里，跳转到第一个可访问页面
+          // 如果当前页面（含恢复的 storedTab）不在可访问列表里，跳转到第一个可访问页面
           if (!accessible.some(m => prev.startsWith(m.path))) {
             return accessible[0].path
           }
           return prev
         })
       }
+      // 标记恢复完成，之后才允许把 activeTab 写回 localStorage
+      restoredRef.current = true
     })
     try {
       const raw = localStorage.getItem('dashboard-opened-tabs')
       if (raw) setOpenedTabs(JSON.parse(raw))
     } catch { /* ignore */ }
   }, [])
+
+  // 记忆当前选中的菜单，刷新后可恢复。restoredRef 为 false 时不写入，
+  // 以免初次挂载把默认 /dashboard 覆盖掉已记住的选中项。
+  useEffect(() => {
+    if (!restoredRef.current) return
+    try { localStorage.setItem('dashboard-active-tab', activeTab) } catch { /* ignore */ }
+  }, [activeTab])
+
+  // 主题：刷新后从 localStorage 恢复，并持久化。初始默认橙色（与 SSR 一致，避免水合错位）。
+  useEffect(() => {
+    try {
+      const t = localStorage.getItem('dashboard-theme')
+      if (t === 'orange' || t === 'purple' || t === 'blue') setTheme(t)
+    } catch { /* ignore */ }
+  }, [])
+  useEffect(() => {
+    if (themeInitRef.current) {
+      themeInitRef.current = false
+      return
+    }
+    try { localStorage.setItem('dashboard-theme', theme) } catch { /* ignore */ }
+  }, [theme])
 
   // Persist opened tabs across page refresh (F5)
   useEffect(() => {
@@ -167,6 +219,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     'callback-logs': '事件回传日志',
     'report-logs': '报表拉取日志',
     'audit-logs': '操作日志',
+    'events-whitelist': '回传token管理',
   }
 
   // Track opened tabs
@@ -292,10 +345,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={() => setActiveTab(child.path)}
                 className={`group flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-[15px] transition-colors ${
                   isActive(child.path)
-                    ? 'bg-amber-500 text-zinc-900'
+                    ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
+                <span className={`h-1.5 w-1.5 flex-shrink-0 rounded-full ${isActive(child.path) ? 'bg-green-500' : 'bg-[var(--primary)] opacity-30'}`} />
                 <span className="tracking-wide">{child.name}</span>
               </button>
             ))}
@@ -330,7 +384,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   })
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div data-theme={theme} className="flex h-screen overflow-hidden">
       {/* Soft gradient background */}
       <div className="pointer-events-none fixed inset-0" style={{
         background: `
@@ -347,13 +401,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex h-[52px] items-center border-b border-white/10 px-4">
           {collapsed ? (
             <div className="flex w-full justify-center">
-              <span className="font-display text-base font-bold text-amber-500">M</span>
+              <span className="font-display text-base font-bold text-[var(--primary)]">M</span>
             </div>
           ) : (
             <>
               <div className="flex items-center gap-2.5">
                 <div className="flex h-6 w-6 items-center justify-center border border-amber-500/25">
-                  <span className="font-display text-xs font-bold text-amber-500">M</span>
+                  <span className="font-display text-xs font-bold text-[var(--primary)]">M</span>
                 </div>
                 <span className="text-xs tracking-[0.2em] text-slate-400">Mintegral</span>
               </div>
@@ -373,9 +427,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="flex w-full items-center justify-center py-2.5 text-slate-500 hover:text-slate-300"
+            aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d={collapsed ? 'M8.25 4.5 15 12 8.25 19.5' : 'M15 19.5 8.25 12 15 4.5'} />
             </svg>
           </button>
         </div>
@@ -421,7 +476,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
                 {/* Dropdown */}
                 {dropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-40 rounded-lg border border-gray-200 bg-white py-2 shadow-lg z-50">
+                  <div className="absolute right-0 top-full mt-2 w-44 rounded-lg border border-gray-200 bg-white py-2 shadow-lg z-50">
+                    {/* 主题切换 */}
+                    <div className="border-b border-gray-100 px-2 pb-1.5 pt-1">
+                      <div className="px-2 pb-1 text-[12px] text-gray-400">主题配色</div>
+                      <button
+                        onClick={() => setTheme('orange')}
+                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[14px] text-gray-700 transition-colors hover:bg-gray-50"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="h-3 w-3 rounded-full" style={{ background: 'var(--color-amber-500)' }} />
+                          橙色
+                        </span>
+                        {theme === 'orange' && (
+                          <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setTheme('purple')}
+                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[14px] text-gray-700 transition-colors hover:bg-gray-50"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="h-3 w-3 rounded-full" style={{ background: '#a855f7' }} />
+                          紫色
+                        </span>
+                        {theme === 'purple' && (
+                          <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setTheme('blue')}
+                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[14px] text-gray-700 transition-colors hover:bg-gray-50"
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="h-3 w-3 rounded-full" style={{ background: '#3b82f6' }} />
+                          蓝色
+                        </span>
+                        {theme === 'blue' && (
+                          <svg className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
                     <button
                       onClick={async () => {
                         setDropdownOpen(false)

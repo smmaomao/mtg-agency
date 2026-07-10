@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase/server'
+import { queryOne } from '@/lib/db'
 import { verifyPassword, createToken } from '@/lib/auth'
 
 export async function POST(request: Request) {
@@ -10,13 +10,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: '请输入账号和密码' }, { status: 400 })
     }
 
-    const { data: user, error } = await supabase
-      .from('admin_users')
-      .select('id, username, real_name, role_id, password_hash, status')
-      .eq('username', username)
-      .single()
+    const user = await queryOne<{
+      id: number; username: string; real_name: string; role_id: number; password_hash: string; status: number
+    }>('SELECT id, username, real_name, role_id, password_hash, status FROM mtg_agency.admin_users WHERE username = $1', [username])
 
-    if (error || !user) {
+    if (!user) {
       return NextResponse.json({ success: false, message: '账号或密码错误' }, { status: 401 })
     }
 
@@ -41,12 +39,12 @@ export async function POST(request: Request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24, // 24h
+      maxAge: 60 * 60 * 24,
       path: '/',
     })
 
     return response
-  } catch (e) {
+  } catch (e: any) {
     console.error('Login error:', e)
     return NextResponse.json({ success: false, message: '服务器错误' }, { status: 500 })
   }

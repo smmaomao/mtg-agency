@@ -18,7 +18,7 @@ interface ReportLog {
   started_at: string | null
   finished_at: string | null
   created_at: string
-  packages_dsp_mapping: { dsp_name: string; channel_name: string | null } | null
+  dsp_name: string | null
 }
 
 export default function ReportLogsPage() {
@@ -128,7 +128,7 @@ export default function ReportLogsPage() {
                 ) : logs.map(l => (
                   <tr key={l.id} className="border-b border-gray-200/50 text-[15px] text-gray-700 hover:bg-gray-100 transition-colors">
                     <td className="py-2.5 pl-4 font-mono text-gray-400">{l.id}</td>
-                    <td className="py-2.5">{l.packages_dsp_mapping?.dsp_name || '-'}</td>
+                    <td className="py-2.5">{l.dsp_name || '-'}</td>
                     <td className="py-2.5">
                       <span className="inline-flex items-center rounded-sm bg-blue-500/10 px-1.5 py-0.5 font-mono text-[15px] text-blue-400">{l.report_type}</span>
                     </td>
@@ -175,7 +175,7 @@ export default function ReportLogsPage() {
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
-                <DetailField label="DSP 平台" value={detail.packages_dsp_mapping?.dsp_name || '-'} />
+                <DetailField label="DSP 平台" value={detail.dsp_name || '-'} />
                 <DetailField label="报表类型" value={detail.report_type} />
                 <DetailField label="报表日期" value={detail.report_date || '-'} />
                 <DetailField label="状态" value={detail.status === 'success' ? '成功' : detail.status === 'running' ? '运行中' : '失败'} />

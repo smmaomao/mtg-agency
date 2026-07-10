@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase/server'
+import { query, count } from '@/lib/db'
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -8,25 +8,24 @@ export async function GET(request: Request) {
   const action = searchParams.get('action')
   const targetTable = searchParams.get('target_table')
   const username = searchParams.get('username')
-
   const from = (page - 1) * pageSize
-  const to = from + pageSize - 1
 
-  let query = supabase
-    .from('audit_logs')
-    .select('*', { count: 'exact' })
+  let where = '1=1'
+  const params: any[] = []
+  let paramIdx = 1
 
-  if (action) query = query.eq('action', action)
-  if (targetTable) query = query.eq('target_table', targetTable)
-  if (username) query = query.ilike('username', `%${username}%`)
+  if (action) { where += ` AND action = $${paramIdx++}`; params.push(action) }
+  if (targetTable) { where += ` AND target_table = $${paramIdx++}`; params.push(targetTable) }
+  if (username) { where += ` AND username ILIKE $${paramIdx++}`; params.push(`%${username}%`) }
 
-  const { data, error, count } = await query
-    .order('created_at', { ascending: false })
-    .range(from, to)
-
-  if (error) {
+  try {
+    const data = await query(
+      `SELECT * FROM mtg_agency.audit_logs WHERE ${where} ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
+      [...params, pageSize, from]
+    )
+    const total = await count('mtg_agency.audit_logs', where, params)
+    return NextResponse.json({ data, total, page, pageSize })
+  } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-
-  return NextResponse.json({ data, total: count, page, pageSize })
 }
