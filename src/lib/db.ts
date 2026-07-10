@@ -1,6 +1,8 @@
 import { Pool } from 'pg'
 
 // 支持 DATABASE_URL 连接字符串，也支持单独参数
+const isLocal = !process.env.DATABASE_URL && (process.env.DB_HOST || 'localhost') === 'localhost'
+
 const poolConfig = process.env.DATABASE_URL
   ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
   : {
@@ -9,6 +11,8 @@ const poolConfig = process.env.DATABASE_URL
       database: process.env.DB_NAME || 'postgres',
       user: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
+      // Supabase 外部连接强制 SSL，本地连接不需要
+      ssl: isLocal ? false : { rejectUnauthorized: false },
     }
 
 const pool = new Pool({
