@@ -46,14 +46,67 @@ console.log('[DB DEBUG] ================================')
 ;(async () => {
   console.log('[DB TEST] 开始测试连接...')
   let client
+
+  // 先测 DNS
+  const host = (poolConfig as any).host
+  if (host) {
+    try {
+      const dnsStart = Date.now()
+      console.log('[DB TEST] DNS 解析 host:', host)
+      const dns = await import('dns').then(m => m.promises)
+      const addrs = await dns.resolve4(host)
+      console.log('[DB TEST] DNS 解析成功 (' + (Date.now() - dnsStart) + 'ms):', JSON.stringify(addrs))
+    } catch (dnsErr: any) {
+      console.error('[DB TEST] ❌ DNS 解析失败:', dnsErr.code || dnsErr.message)
+    }
+  }
+
+  // TCP 连通性测试
+  const testHost = host || 'localhost'
+  const testPort = (poolConfig as any).port || 5432
+  console.log('[DB TEST] TCP 连接测试 ' + testHost + ':' + testPort)
   try {
-    client = await pool.connect()
+    const netStart = Date.now()
+    const net = await import('net')
+    await new Promise<void>((resolve, reject) => {
+      const sock = new net.Socket()
+      sock.setTimeout(5000)
+      sock.on('connect', () => {
+        console.log('[DB TEST] TCP 连接成功 (' + (Date.now() - netStart) + 'ms)')
+        sock.destroy()
+        resolve()
+      })
+      sock.on('error', (e: any) => {
+        console.error('[DB TEST] ❌ TCP 连接失败:', e.code || e.message)
+        sock.destroy()
+        reject(e)
+      })
+      sock.on('timeout', () => {
+        console.error('[DB TEST] ❌ TCP 连接超时 (5s)')
+        sock.destroy()
+        reject(new Error('TCP timeout'))
+      })
+      sock.connect(testPort, testHost)
+    })
+  } catch (tcpErr: any) {
+    console.error('[DB TEST] TCP 阶段无法连接，跳过 pg 连接测试')
+    console.log('[DB TEST] 测试结束（网络不通）')
+    return
+  }
+
+  // pg 连接测试，带显式超时
+  try {
+    console.log('[DB TEST] 开始 pg 连接...')
+    const connectTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('pg connect timeout (8s)')), 8000)
+    )
+    client = await Promise.race([pool.connect(), connectTimeout])
+    console.log('[DB TEST] pg 连接成功')
     const result = await client.query('SELECT 1 as test')
-    console.log('[DB TEST] ✅ 数据库连接成功:', JSON.stringify(result.rows[0]))
+    console.log('[DB TEST] ✅ 数据库查询成功:', JSON.stringify(result.rows[0]))
   } catch (err: any) {
     console.error('[DB TEST] ❌ 数据库连接失败:', err.message)
     console.error('[DB TEST] 错误码:', err.code)
-    console.error('[DB TEST] 错误详情:', JSON.stringify({ code: err.code, severity: err.severity, detail: err.detail, hint: err.hint, message: err.message }, null, 2))
   } finally {
     if (client) client.release()
     console.log('[DB TEST] 测试结束')
