@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { Pool } from 'pg'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30 // 给足超时时间
@@ -16,12 +15,22 @@ export async function GET() {
   const password = process.env.DB_PASSWORD || ''
   const connectionString = process.env.DATABASE_URL
 
+  // 密码字节级检查，发现空格/隐藏字符
+  const pwBytes = Buffer.from(password, 'utf-8')
+  const hasSpace = password.includes(' ')
+  const hasNewline = password.includes('\n') || password.includes('\r')
+  const firstByte = pwBytes.length > 0 ? pwBytes.readUInt8(0).toString(16) : 'none'
+  const lastByte = pwBytes.length > 0 ? pwBytes.readUInt8(pwBytes.length - 1).toString(16) : 'none'
+  const hasNonPrintable = pwBytes.some((b: number) => b > 0 && (b < 32 || b > 126))
+
   log(`[DB-TEST] === 开始诊断 ===`)
   log(`[DB-TEST] host: ${host}`)
   log(`[DB-TEST] port: ${port}`)
   log(`[DB-TEST] database: ${database}`)
   log(`[DB-TEST] user: ${user}`)
   log(`[DB-TEST] password length: ${password.length}`)
+  log(`[DB-TEST] 首字节: 0x${firstByte}, 末字节: 0x${lastByte}`)
+  log(`[DB-TEST] 含空格: ${hasSpace}, 含换行: ${hasNewline}, 含不可打印字符: ${hasNonPrintable}`)
   log(`[DB-TEST] DATABASE_URL: ${!!connectionString}`)
 
   // 1. DNS 测试
