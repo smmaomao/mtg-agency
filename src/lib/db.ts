@@ -42,6 +42,18 @@ console.log('[DB DEBUG] DB_PASSWORD set:', !!process.env.DB_PASSWORD)
 console.log('[DB DEBUG] DATABASE_URL set:', !!process.env.DATABASE_URL)
 console.log('[DB DEBUG] ================================')
 
+// [DEBUG] 启动时立即测试连接
+;(async () => {
+  try {
+    const result = await pool.query('SELECT 1 as test')
+    console.log('[DB TEST] ✅ 数据库连接成功:', JSON.stringify(result.rows[0]))
+  } catch (err: any) {
+    console.error('[DB TEST] ❌ 数据库连接失败:', err.message)
+    console.error('[DB TEST] 错误码:', err.code)
+    console.error('[DB TEST] 错误详情:', JSON.stringify({ code: err.code, severity: err.severity, detail: err.detail, hint: err.hint, message: err.message }, null, 2))
+  }
+})()
+
 /**
  * 查询多行
  */
