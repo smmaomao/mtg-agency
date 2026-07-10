@@ -22,6 +22,17 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 })
 
+// [DEBUG] 打印部署环境实际解析到的连接配置（密码仅显示长度，便于排查 Vercel 环境变量问题）
+console.log('[DB DEBUG]', {
+  usingConnectionString: !!process.env.DATABASE_URL,
+  host: poolConfig.host || '(from connectionString)',
+  port: (poolConfig as any).port,
+  database: (poolConfig as any).database,
+  user: (poolConfig as any).user,
+  passwordLength: (poolConfig as any).password ? String((poolConfig as any).password).length : 0,
+  ssl: !!(poolConfig as any).ssl,
+})
+
 /**
  * 查询多行
  */
