@@ -5,8 +5,6 @@ const publicPaths = ['/login', '/api/login']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const method = request.method
-  const start = Date.now()
 
   // Allow public paths
   if (publicPaths.some(p => pathname.startsWith(p))) {
@@ -23,18 +21,9 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  const response = NextResponse.next()
-
-  // 记录 API 请求日志
-  if (pathname.startsWith('/api/')) {
-    const elapsed = Date.now() - start
-    const timestamp = new Date().toISOString()
-    console.log(`[${timestamp}] ${method} ${pathname} → ${response.status} (${elapsed}ms)`)
-  }
-
-  return response
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/api/:path*'],
+  matcher: ['/dashboard/:path*'],
 }

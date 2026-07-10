@@ -45,10 +45,29 @@ console.log('[DB DEBUG] ================================')
 
 
 /**
+ * 内部查询包装：统一记录每条 SQL 的执行耗时
+ */
+async function runQuery(text: string, params?: any[]) {
+  const start = performance.now()
+  const preview = text.replace(/\s+/g, ' ').trim().slice(0, 100)
+  const paramStr = params && params.length ? ' ' + JSON.stringify(params).slice(0, 80) : ''
+  try {
+    const result = await pool.query(text, params)
+    const elapsed = Math.round(performance.now() - start)
+    console.log(`[DB ${elapsed}ms] ${preview}${paramStr}`)
+    return result
+  } catch (err: any) {
+    const elapsed = Math.round(performance.now() - start)
+    console.error(`[DB ${elapsed}ms] ❌ ${preview}: ${err.message}`)
+    throw err
+  }
+}
+
+/**
  * 查询多行
  */
 export async function query<T = any>(text: string, params?: any[]): Promise<T[]> {
-  const result = await pool.query(text, params)
+  const result = await runQuery(text, params)
   return result.rows as T[]
 }
 
@@ -56,7 +75,7 @@ export async function query<T = any>(text: string, params?: any[]): Promise<T[]>
  * 查询单行
  */
 export async function queryOne<T = any>(text: string, params?: any[]): Promise<T | null> {
-  const result = await pool.query(text, params)
+  const result = await runQuery(text, params)
   return (result.rows[0] as T) || null
 }
 
@@ -68,7 +87,7 @@ export async function insert<T = any>(table: string, data: Record<string, any>):
   const values = Object.values(data)
   const placeholders = keys.map((_, i) => `$${i + 1}`)
   const text = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders.join(', ')}) RETURNING *`
-  const result = await pool.query(text, values)
+  const result = await runQuery(text, values)
   return (result.rows[0] as T) || null
 }
 
@@ -85,7 +104,7 @@ export async function update<T = any>(table: string, data: Record<string, any>, 
     ? where.replace(/\$(\d+)/g, (_, n) => `$${parseInt(n, 10) + offset}`)
     : ''
   const text = `UPDATE ${table} SET ${setClause}${whereShifted ? ` WHERE ${whereShifted}` : ''} RETURNING *`
-  const result = await pool.query(text, [...values, ...whereParams])
+  const result = await runQuery(text, [...values, ...whereParams])
   return (result.rows[0] as T) || null
 }
 
@@ -94,7 +113,7 @@ export async function update<T = any>(table: string, data: Record<string, any>, 
  */
 export async function del(table: string, where: string, params: any[]): Promise<boolean> {
   const text = `DELETE FROM ${table} WHERE ${where}`
-  const result = await pool.query(text, params)
+  const result = await runQuery(text, params)
   return (result.rowCount ?? 0) > 0
 }
 
@@ -103,7 +122,7 @@ export async function del(table: string, where: string, params: any[]): Promise<
  */
 export async function count(table: string, where?: string, params?: any[]): Promise<number> {
   const text = where ? `SELECT COUNT(*) as count FROM ${table} WHERE ${where}` : `SELECT COUNT(*) as count FROM ${table}`
-  const result = await pool.query(text, params)
+  const result = await runQuery(text, params)
   return parseInt(result.rows[0].count)
 }
 
