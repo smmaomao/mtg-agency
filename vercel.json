@@ -1,16 +1,3 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "env": {
-    "DB_HOST": "@db-host",
-    "DB_PORT": "@db-port",
-    "DB_NAME": "@db-name",
-    "DB_USER": "@db-user",
-    "DB_PASSWORD": "@db-password"
-  }
+  "version": 2
 }
