@@ -18,6 +18,7 @@ interface DspMapping {
   dsp_name: string
   channel_name: string | null
   dsp_package_id: string | null
+  campuuid: string | null
   status: string
   remark: string | null
   created_at: string
