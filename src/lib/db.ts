@@ -19,7 +19,7 @@ const pool = new Pool({
   ...poolConfig,
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
+  connectionTimeoutMillis: 10000,
 })
 
 // [DEBUG] 完整的连接配置快照
@@ -44,13 +44,19 @@ console.log('[DB DEBUG] ================================')
 
 // [DEBUG] 启动时立即测试连接
 ;(async () => {
+  console.log('[DB TEST] 开始测试连接...')
+  let client
   try {
-    const result = await pool.query('SELECT 1 as test')
+    client = await pool.connect()
+    const result = await client.query('SELECT 1 as test')
     console.log('[DB TEST] ✅ 数据库连接成功:', JSON.stringify(result.rows[0]))
   } catch (err: any) {
     console.error('[DB TEST] ❌ 数据库连接失败:', err.message)
     console.error('[DB TEST] 错误码:', err.code)
     console.error('[DB TEST] 错误详情:', JSON.stringify({ code: err.code, severity: err.severity, detail: err.detail, hint: err.hint, message: err.message }, null, 2))
+  } finally {
+    if (client) client.release()
+    console.log('[DB TEST] 测试结束')
   }
 })()
 
