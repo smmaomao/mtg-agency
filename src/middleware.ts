@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { parseToken } from '@/lib/auth'
 
 const publicPaths = ['/login', '/api/login']
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const method = request.method
+  const start = Date.now()
 
   // Allow public paths
   if (publicPaths.some(p => pathname.startsWith(p))) {
@@ -13,22 +14,27 @@ export function middleware(request: NextRequest) {
   }
 
   // Check auth for dashboard routes
-  const token = request.cookies.get('admin_token')?.value
-  if (!token) {
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
+  if (pathname.startsWith('/dashboard')) {
+    const token = request.cookies.get('admin_token')?.value
+    if (!token) {
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
   }
 
-  const payload = parseToken(token)
-  if (!payload) {
-    const loginUrl = new URL('/login', request.url)
-    return NextResponse.redirect(loginUrl)
+  const response = NextResponse.next()
+
+  // 记录 API 请求日志
+  if (pathname.startsWith('/api/')) {
+    const elapsed = Date.now() - start
+    const timestamp = new Date().toISOString()
+    console.log(`[${timestamp}] ${method} ${pathname} → ${response.status} (${elapsed}ms)`)
   }
 
-  return NextResponse.next()
+  return response
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*'],
+  matcher: ['/dashboard/:path*', '/api/:path*'],
 }
