@@ -17,7 +17,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="antialiased">
         {children}
-        <SpeedInsights />
+        {/* 仅在 Vercel 环境挂载，换到其他平台不会发无用请求 */}
+        {process.env.VERCEL === '1' && <SpeedInsights />}
       </body>
     </html>
   )
