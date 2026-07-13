@@ -1,18 +1,20 @@
+import { withTiming } from '../../../lib/timing'
 import { NextResponse } from 'next/server'
 import { query, insert, update, del } from '@/lib/db'
 import { hashPassword } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
 
-export async function GET() {
+export const GET = withTiming(async () => {
   try {
     const data = await query('SELECT id, username, real_name, role_id, status, created_at FROM mtg_agency.admin_users ORDER BY id ASC')
     return NextResponse.json({ data })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-}
 
-export async function POST(request: Request) {
+})
+
+export const POST = withTiming(async (request: Request) => {
   const body = await request.json()
   try {
     const data = await insert('mtg_agency.admin_users', {
@@ -30,9 +32,9 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-}
+})
 
-export async function PUT(request: Request) {
+export const PUT = withTiming(async (request: Request) => {
   const body = await request.json()
   const updateData: Record<string, any> = {
     real_name: body.real_name || '',
@@ -51,9 +53,9 @@ export async function PUT(request: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(request: Request) {
+export const DELETE = withTiming(async (request: Request) => {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: '缺少ID' }, { status: 400 })
@@ -67,4 +69,5 @@ export async function DELETE(request: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-}
+
+})

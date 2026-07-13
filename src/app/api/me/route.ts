@@ -1,8 +1,9 @@
+import { withTiming } from '../../../lib/timing'
 import { NextResponse } from 'next/server'
 import { queryOne } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 
-export async function GET() {
+export const GET = withTiming(async () => {
   const session = await getSession()
   if (!session) {
     return NextResponse.json({ user: null })
@@ -22,4 +23,4 @@ export async function GET() {
   }
 
   return NextResponse.json({ user: { ...session, role_name, menu_permissions } })
-}
+})

@@ -1,3 +1,4 @@
+import { withTiming } from '../../../../lib/timing'
 import { NextResponse } from 'next/server'
 import { queryOne, insert, update } from '@/lib/db'
 import { submitReport, downloadReport, parseTsv, waitForReport } from '@/lib/mintegral'
@@ -12,7 +13,7 @@ import { submitReport, downloadReport, parseTsv, waitForReport } from '@/lib/min
  *   report_date  必填，报表日期 YYYY-MM-DD
  *   callback_url 可选，回调地址
  */
-export async function POST(request: Request) {
+export const POST = withTiming(async (request: Request) => {
   const body = await request.json()
   const { package_id, report_date, callback_url } = body
 
@@ -82,14 +83,15 @@ export async function POST(request: Request) {
     message: '报表拉取已开始，请稍后再来查询',
     log_id: log.id,
   })
-}
+
+})
 
 /**
  * GET /api/report/pull?log_id=xxx
  *
  * 查询拉取状态和结果
  */
-export async function GET(request: Request) {
+export const GET = withTiming(async (request: Request) => {
   const { searchParams } = new URL(request.url)
   const logId = searchParams.get('log_id')
   const packageId = searchParams.get('package_id')
@@ -116,7 +118,8 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({ error: '请提供 log_id 或 package_id + report_date' }, { status: 400 })
-}
+
+})
 
 /**
  * 实际执行报表拉取（异步）

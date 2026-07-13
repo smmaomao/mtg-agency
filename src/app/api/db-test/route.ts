@@ -1,9 +1,10 @@
+import { withTiming } from '../../../lib/timing'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 30 // 给足超时时间
 
-export async function GET() {
+export const GET = withTiming(async () => {
   const logs: string[] = []
   const log = (msg: string) => { console.log(msg); logs.push(msg) }
   const errLog = (msg: string) => { console.error(msg); logs.push(msg) }
@@ -117,4 +118,4 @@ export async function GET() {
 
   log(`[DB-TEST] === 诊断完成 ===`)
   return NextResponse.json({ status: 'OK', logs })
-}
+})

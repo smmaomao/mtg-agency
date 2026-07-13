@@ -1,6 +1,7 @@
+import { withTiming } from '../../../lib/timing'
 import { NextResponse } from 'next/server'
 
-export async function POST() {
+export const POST = withTiming(async () => {
   const response = NextResponse.json({ success: true })
   response.cookies.set('admin_token', '', {
     httpOnly: true,
@@ -10,4 +11,4 @@ export async function POST() {
     path: '/',
   })
   return response
-}
+})

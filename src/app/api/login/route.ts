@@ -1,8 +1,9 @@
+import { withTiming } from '../../../lib/timing'
 import { NextResponse } from 'next/server'
 import { queryOne } from '@/lib/db'
 import { verifyPassword, createToken } from '@/lib/auth'
 
-export async function POST(request: Request) {
+export const POST = withTiming(async (request: Request) => {
   try {
     const { username, password, remember } = await request.json()
 
@@ -50,4 +51,5 @@ export async function POST(request: Request) {
     console.error('Login error:', e)
     return NextResponse.json({ success: false, message: '服务器错误' }, { status: 500 })
   }
-}
+
+})

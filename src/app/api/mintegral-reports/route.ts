@@ -1,3 +1,4 @@
+import { withTiming } from '../../../lib/timing'
 import { NextResponse } from 'next/server'
 import { submitReport, downloadReport, parseTsv } from '@/lib/mintegral'
 
@@ -7,7 +8,7 @@ import { submitReport, downloadReport, parseTsv } from '@/lib/mintegral'
  * 直接查询 Mintegral 报表（不走 report_pull_logs）
  * 适合临时查询，不适合定期拉取
  */
-export async function GET(request: Request) {
+export const GET = withTiming(async (request: Request) => {
   const { searchParams } = new URL(request.url)
 
   const start_time = searchParams.get('start_time')
@@ -45,4 +46,5 @@ export async function GET(request: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-}
+
+})

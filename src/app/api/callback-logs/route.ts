@@ -1,7 +1,8 @@
+import { withTiming } from '../../../lib/timing'
 import { NextResponse } from 'next/server'
 import { query, del, count } from '@/lib/db'
 
-export async function GET(request: Request) {
+export const GET = withTiming(async (request: Request) => {
   const { searchParams } = new URL(request.url)
   const page = parseInt(searchParams.get('page') || '1')
   const pageSize = parseInt(searchParams.get('pageSize') || '20')
@@ -35,9 +36,9 @@ export async function GET(request: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-}
+})
 
-export async function DELETE(request: Request) {
+export const DELETE = withTiming(async (request: Request) => {
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: '缺少ID' }, { status: 400 })
@@ -48,4 +49,5 @@ export async function DELETE(request: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-}
+
+})

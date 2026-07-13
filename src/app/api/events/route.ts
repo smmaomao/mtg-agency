@@ -1,10 +1,11 @@
+import { withTiming } from '../../../lib/timing'
 import { NextResponse } from 'next/server'
 import { insert, update } from '@/lib/db'
 import { validateToken } from '@/lib/tokenCache'
 
 const POSTBACK_BASE = 'http://postback.mintegral.net'
 
-export async function GET(request: Request) {
+export const GET = withTiming(async (request: Request) => {
   const { searchParams } = new URL(request.url)
 
   // Token 验证（内存缓存，高性能）
@@ -100,4 +101,4 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.redirect(fullForwardUrl, 302)
-}
+})

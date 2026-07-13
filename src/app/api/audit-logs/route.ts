@@ -1,7 +1,8 @@
+import { withTiming } from '../../../lib/timing'
 import { NextResponse } from 'next/server'
 import { query, count } from '@/lib/db'
 
-export async function GET(request: Request) {
+export const GET = withTiming(async (request: Request) => {
   const { searchParams } = new URL(request.url)
   const page = parseInt(searchParams.get('page') || '1')
   const pageSize = parseInt(searchParams.get('pageSize') || '20')
@@ -28,4 +29,5 @@ export async function GET(request: Request) {
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-}
+
+})
