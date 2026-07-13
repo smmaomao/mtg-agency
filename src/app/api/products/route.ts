@@ -75,6 +75,9 @@ export const DELETE = withTiming(async (request: Request) => {
     await logAudit({ action: 'delete', target_table: 'products', target_id: parseInt(id), detail: `删除产品 ID:${id}` })
     return NextResponse.json({ success: true })
   } catch (error: any) {
+    if (error.code === '23503') {
+      return NextResponse.json({ error: '该产品已被包体引用，无法删除' }, { status: 400 })
+    }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
