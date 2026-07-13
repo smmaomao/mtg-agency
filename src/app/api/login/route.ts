@@ -4,7 +4,7 @@ import { verifyPassword, createToken } from '@/lib/auth'
 
 export async function POST(request: Request) {
   try {
-    const { username, password } = await request.json()
+    const { username, password, remember } = await request.json()
 
     if (!username || !password) {
       return NextResponse.json({ success: false, message: '请输入账号和密码' }, { status: 400 })
@@ -27,19 +27,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: '账号或密码错误' }, { status: 401 })
     }
 
+    // 有效期由后端控制，仅依据 remember 布尔值决定，忽略前端可能传入的过大值
+    const maxAge = remember ? 60 * 60 * 24 * 7 : 60 * 60 * 24 * 3
     const token = await createToken({
       id: user.id,
       username: user.username,
       real_name: user.real_name,
       role_id: user.role_id,
-    })
+    }, remember ? '7d' : '3d')
 
     const response = NextResponse.json({ success: true })
     response.cookies.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24,
+      maxAge,
       path: '/',
     })
 

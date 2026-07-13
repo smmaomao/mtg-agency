@@ -11,12 +11,20 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   // 密码可见切换
   const [showPassword, setShowPassword] = useState(false)
+  // 记住我
+  const [remember, setRemember] = useState(false)
   // 跟随用户在后台设置的主题（橙/紫），让登出后的登录页也保持同一配色
   const [theme, setTheme] = useState<'orange' | 'purple'>('orange')
   useEffect(() => {
     try {
       const t = localStorage.getItem('dashboard-theme')
       if (t === 'orange' || t === 'purple') setTheme(t)
+      // 读取上次记住的用户名，自动填充
+      const savedUser = localStorage.getItem('remembered-username')
+      if (savedUser) {
+        setUsername(savedUser)
+        setRemember(true)
+      }
     } catch { /* ignore */ }
   }, [])
 
@@ -29,10 +37,18 @@ export default function LoginPage() {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password, remember }),
       })
       const data = await res.json()
       if (data.success) {
+        // 记住我：保存用户名，否则清除
+        try {
+          if (remember) {
+            localStorage.setItem('remembered-username', username)
+          } else {
+            localStorage.removeItem('remembered-username')
+          }
+        } catch { /* ignore */ }
         router.push('/dashboard/menus')
       } else {
         setError(data.message || '登录失败')
@@ -132,6 +148,17 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
+
+          {/* Remember me */}
+          <label className="flex cursor-pointer select-none items-center gap-2.5">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={e => setRemember(e.target.checked)}
+              className="h-4 w-4 cursor-pointer rounded border-zinc-300 text-[var(--primary)] accent-[var(--primary)] focus:ring-[var(--primary)]"
+            />
+            <span className="text-sm text-zinc-600">记住我（7 天内免登录）</span>
+          </label>
 
           {/* Submit */}
           <button

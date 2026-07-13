@@ -21,10 +21,10 @@ export function hashPassword(password: string): string {
   return bcrypt.hashSync(password, 10)
 }
 
-export async function createToken(payload: UserPayload): Promise<string> {
+export async function createToken(payload: UserPayload, expiresIn: string = '24h'): Promise<string> {
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('24h')
+    .setExpirationTime(expiresIn)
     .sign(JWT_SECRET)
 }
 
