@@ -18,11 +18,11 @@ export function withTiming(handler: Handler): Handler {
       try {
         const res = await handler(...args)
         const elapsed = Math.round(performance.now() - start)
-        console.log(`[REQ ${elapsed}ms] ${method} ${pathname} → ${res?.status ?? '?'} (rid=${requestId})`)
+        console.log(`[${method}] ${pathname} - ${res?.status ?? '?'} - ${elapsed}ms (rid=${requestId})`)
         return res
       } catch (e: any) {
         const elapsed = Math.round(performance.now() - start)
-        console.error(`[REQ ${elapsed}ms] ${method} ${pathname} ❌ ${e?.message ?? e} (rid=${requestId})`)
+        console.error(`[${method}] ${pathname} - ERR - ${elapsed}ms (rid=${requestId}) ${e?.message ?? e}`)
         throw e
       }
     })
