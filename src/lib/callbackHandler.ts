@@ -101,5 +101,5 @@ export async function handleCallback(request: Request, eventType: string) {
     return NextResponse.json({ error: '转发失败' }, { status: 502 })
   }
 
-  return NextResponse.redirect(fullForwardUrl, 302)
+  return NextResponse.json({ success: true })
 }
