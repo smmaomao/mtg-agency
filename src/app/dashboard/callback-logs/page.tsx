@@ -81,10 +81,6 @@ function getEventColor(key: string) {
   return eventColors[key] || 'bg-amber-500/10 text-amber-400'
 }
 
-function getEventLabel(key: string) {
-  return eventLabels[key] || key
-}
-
 export default function CallbackLogsPage() {
   const [logs, setLogs] = useState<CallbackLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,10 +174,15 @@ export default function CallbackLogsPage() {
                   <tr key={l.id} className="border-b border-gray-200/50 text-[15px] text-gray-700 hover:bg-gray-100 transition-colors">
                     <td className="py-2.5 pl-4 font-mono text-gray-400">{l.id}</td>
                     <td className="py-2.5">
-                      <span
-                        className={`inline-flex items-center rounded-sm px-1.5 py-0.5 text-[13px] ${getEventColor(l.event_name || l.event_type)}`}
-                        title={l.event_name || l.event_type}
-                      >{getEventLabel(l.event_name || l.event_type)}</span>
+                      {(() => {
+                        const key = l.event_name || l.event_type
+                        const label = eventLabels[key]
+                        return (
+                          <span className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-mono text-[13px] ${getEventColor(key)}`}>
+                            {key}{label ? <span className="ml-1 text-[11px] opacity-70">({label})</span> : null}
+                          </span>
+                        )
+                      })()}
                     </td>
                     <td className="py-2.5 font-mono text-[15px] text-gray-500 max-w-[180px] truncate" title={l.click_id || ''}>{l.click_id || '-'}</td>
                     <td className="py-2.5 font-mono text-[15px] text-gray-500 max-w-[160px] truncate" title={l.pixel_id || ''}>{l.pixel_id || '-'}</td>
