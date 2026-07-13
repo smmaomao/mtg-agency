@@ -81,12 +81,15 @@ function getEventColor(key: string) {
   return eventColors[key] || 'bg-amber-500/10 text-amber-400'
 }
 
+function todayStr() { return new Date().toISOString().slice(0, 10) }
+function daysAgoStr(n: number) { return new Date(Date.now() - n * 86400000).toISOString().slice(0, 10) }
+
 export default function CallbackLogsPage() {
   const [logs, setLogs] = useState<CallbackLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({ event_name: '', status: '', click_id: '' });
+  const [filters, setFilters] = useState({ date_from: daysAgoStr(7), date_to: todayStr(), event_name: '', status: '', click_id: '' });
   const [detail, setDetail] = useState<CallbackLog | null>(null);
   const [pageSize, setPageSize] = useState(20);
 
@@ -94,6 +97,8 @@ export default function CallbackLogsPage() {
 
   function buildUrl() {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (filters.date_from) params.set('date_from', filters.date_from);
+    if (filters.date_to) params.set('date_to', filters.date_to);
     if (filters.event_name) params.set('event_name', filters.event_name);
     if (filters.status) params.set('status', filters.status);
     if (filters.click_id) params.set('click_id', filters.click_id);
@@ -131,6 +136,11 @@ export default function CallbackLogsPage() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
+        <input type="date" value={filters.date_from} onChange={e => { setFilters(f => ({ ...f, date_from: e.target.value })); setPage(1) }}
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] text-gray-700 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
+        <span className="text-[13px] text-gray-400">—</span>
+        <input type="date" value={filters.date_to} onChange={e => { setFilters(f => ({ ...f, date_to: e.target.value })); setPage(1) }}
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] text-gray-700 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
         <input value={filters.event_name} onChange={e => { setFilters(f => ({ ...f, event_name: e.target.value })); setPage(1) }}
           placeholder="事件名称" className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] text-gray-700 placeholder-gray-400 outline-none w-[160px] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
         <input value={filters.click_id} onChange={e => { setFilters(f => ({ ...f, click_id: e.target.value })); setPage(1) }}

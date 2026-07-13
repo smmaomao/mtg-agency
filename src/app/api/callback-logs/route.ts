@@ -11,6 +11,8 @@ export const GET = withTiming(async (request: Request) => {
   const status = searchParams.get('status')
   const mappingId = searchParams.get('mapping_id')
   const clickId = searchParams.get('click_id')
+  const dateFrom = searchParams.get('date_from')
+  const dateTo = searchParams.get('date_to')
   const from = (page - 1) * pageSize
 
   let where = '1=1'
@@ -22,6 +24,8 @@ export const GET = withTiming(async (request: Request) => {
   if (status) { where += ` AND c.status = $${idx++}`; params.push(status) }
   if (mappingId) { where += ` AND c.mapping_id = $${idx++}`; params.push(parseInt(mappingId)) }
   if (clickId) { where += ` AND c.click_id = $${idx++}`; params.push(clickId) }
+  if (dateFrom) { where += ` AND c.created_at::date >= $${idx++}`; params.push(dateFrom) }
+  if (dateTo) { where += ` AND c.created_at::date <= $${idx++}`; params.push(dateTo) }
 
   try {
     const data = await query(`
