@@ -91,7 +91,7 @@ export default function EventsWhitelistPage() {
       <div className="mb-6 flex items-end justify-between border-b border-gray-200 pb-4">
         <div>
           <h1 className="text-xl font-semibold text-black tracking-tight">回传 token 管理</h1>
-          <p className="mt-1 text-sm text-gray-400">管理回传接口的访问 Token</p>
+          <p className="mt-1 text-sm text-gray-400">管理回传接口的访问Token，可以不设置token，多个时表示都可以使用</p>
         </div>
         <button onClick={openCreate} className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition-all hover:bg-emerald-100 hover:text-emerald-800">
           + 新增
