@@ -1,95 +1,78 @@
 import { withTiming } from '../../../../lib/timing'
 import { NextResponse } from 'next/server'
 import { queryOne, insert, update } from '@/lib/db'
-import { submitReport, downloadReport, parseTsv, waitForReport } from '@/lib/mintegral'
+import { submitReport, downloadReport, parseTsv } from '@/lib/mintegral'
 
 /**
  * POST /api/report/pull
  *
- * 触发报表拉取
- *
- * 参数:
- *   package_id   必填，包体 ID
- *   report_date  必填，报表日期 YYYY-MM-DD
- *   callback_url 可选，回调地址
+ *   package_id   必填
+ *   report_date  必填 YYYY-MM-DD
+ *   force        可选，强制重新拉取
  */
 export const POST = withTiming(async (request: Request) => {
   const body = await request.json()
-  const { package_id, report_date, callback_url } = body
+  const { package_id, report_date, force } = body
 
   if (!package_id || !report_date) {
     return NextResponse.json({ error: '缺少必填参数: package_id, report_date' }, { status: 400 })
   }
 
-  // 获取客户端 IP
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-    || request.headers.get('x-real-ip')
-    || 'unknown'
+    || request.headers.get('x-real-ip') || 'unknown'
 
-  // 检查是否已有该包+日期的请求记录
+  // 查最新记录
   const existing = await queryOne<{
-    id: number; status: string; total_rows: number; file_count: number; error_message: string | null
+    id: number; status: string; result_data: any
   }>(
-    'SELECT id, status, total_rows, file_count, error_message FROM mtg_agency.report_pull_logs WHERE mapping_id = $1 AND report_date = $2 ORDER BY id DESC LIMIT 1',
+    'SELECT id, status, result_data FROM mtg_agency.report_pull_logs WHERE mapping_id = $1 AND report_date = $2 ORDER BY id DESC LIMIT 1',
     [package_id, report_date]
   )
 
-  // 如果已有记录且状态为 success，直接返回数据
-  if (existing && existing.status === 'success' && existing.total_rows > 0) {
-    return NextResponse.json({
-      status: 'completed',
-      message: '数据已拉取完成',
-      log_id: existing.id,
-      total_rows: existing.total_rows,
-      file_count: existing.file_count,
-    })
+  // 非强制 + 有记录 → 智能处理
+  if (!force && existing) {
+    // 有结果 → 直接返回
+    if (existing.status === 'success' && existing.result_data) {
+      return NextResponse.json({ status: 'completed', data: existing.result_data, log_id: existing.id })
+    }
+
+    // 拉取中/待处理 → 去 Mintegral 查一下
+    if (existing.status === 'running' || existing.status === 'pending') {
+      const result = await checkMintegral(package_id, report_date, existing.id)
+      if (result) {
+        return NextResponse.json({ status: 'completed', data: result, log_id: existing.id })
+      }
+      return NextResponse.json({ status: 'fetching', message: '正在拉取中，请稍后再来', log_id: existing.id })
+    }
+
+    // 失败 → 走下面新建逻辑
   }
 
-  // 如果已有记录且状态为 running，返回拉取中
-  if (existing && existing.status === 'running') {
-    return NextResponse.json({
-      status: 'fetching',
-      message: '还在拉取中，请过一段时间再来',
-      log_id: existing.id,
-    })
-  }
-
-  // 如果已有记录且状态为 failed，可以重试（创建新记录）
-  // 否则创建新记录
+  // 新建记录
   const log = await insert<{ id: number }>('mtg_agency.report_pull_logs', {
     mapping_id: package_id,
     report_type: 'mintegral_daily',
     report_date,
-    pull_params: JSON.stringify({ package_id, report_date, callback_url }),
-    status: 'running',
+    pull_params: JSON.stringify({ package_id, report_date }),
+    status: 'pending',
     ip_address: ip,
-    callback_url: callback_url || null,
     file_count: 0,
     total_rows: 0,
     started_at: new Date().toISOString(),
   })
 
-  if (!log) {
-    return NextResponse.json({ error: '创建日志失败' }, { status: 500 })
-  }
+  if (!log) return NextResponse.json({ error: '创建记录失败' }, { status: 500 })
 
-  // 异步执行报表拉取（不阻塞响应）
+  // 异步拉取
   pullReport(log.id, package_id, report_date).catch(err => {
-    console.error('[report/pull] Async pull failed:', err)
+    console.error('[report/pull] Async failed:', err)
   })
 
-  return NextResponse.json({
-    status: 'started',
-    message: '报表拉取已开始，请稍后再来查询',
-    log_id: log.id,
-  })
-
+  return NextResponse.json({ status: 'pending', message: '报表拉取已开始，请稍后再来查询', log_id: log.id })
 })
 
 /**
- * GET /api/report/pull?log_id=xxx
- *
- * 查询拉取状态和结果
+ * GET /api/report/pull?package_id=1&report_date=2026-07-10
  */
 export const GET = withTiming(async (request: Request) => {
   const { searchParams } = new URL(request.url)
@@ -97,55 +80,84 @@ export const GET = withTiming(async (request: Request) => {
   const packageId = searchParams.get('package_id')
   const reportDate = searchParams.get('report_date')
 
-  // 按 log_id 查询
   if (logId) {
-    const log = await queryOne(
-      'SELECT * FROM mtg_agency.report_pull_logs WHERE id = $1',
-      [parseInt(logId)]
-    )
+    const log = await queryOne('SELECT * FROM mtg_agency.report_pull_logs WHERE id = $1', [parseInt(logId)])
     if (!log) return NextResponse.json({ error: '记录不存在' }, { status: 404 })
     return NextResponse.json({ data: log })
   }
 
-  // 按 package_id + report_date 查询
   if (packageId && reportDate) {
     const log = await queryOne(
       'SELECT * FROM mtg_agency.report_pull_logs WHERE mapping_id = $1 AND report_date = $2 ORDER BY id DESC LIMIT 1',
       [parseInt(packageId), reportDate]
     )
-    if (!log) return NextResponse.json({ data: null })
-    return NextResponse.json({ data: log })
+    return NextResponse.json({ data: log || null })
   }
 
   return NextResponse.json({ error: '请提供 log_id 或 package_id + report_date' }, { status: 400 })
-
 })
 
-/**
- * 实际执行报表拉取（异步）
- */
-async function pullReport(logId: number, packageId: number, reportDate: string) {
-  const startTime = `${reportDate} 00:00:00`
-  const endTime = `${reportDate} 23:59:59`
+/** 去 Mintegral 查状态，有结果就下载并更新记录 */
+async function checkMintegral(packageId: number, reportDate: string, logId: number) {
+  const params = {
+    start_time: `${reportDate} 00:00:00`,
+    end_time: `${reportDate} 23:59:59`,
+    dimension_option: 'package',
+    package_ids: String(packageId),
+  }
+  try {
+    const { code } = await submitReport(params)
+    if (code !== 200) return null
 
-  const pullParams = {
-    start_time: startTime,
-    end_time: endTime,
+    const tsv = await downloadReport(params)
+    const rows = parseTsv(tsv)
+
+    await update('mtg_agency.report_pull_logs', {
+      status: 'success',
+      result_data: JSON.stringify(rows),
+      file_count: 1,
+      total_rows: rows.length,
+      finished_at: new Date().toISOString(),
+    }, 'id = $1', [logId])
+
+    return rows
+  } catch {
+    return null
+  }
+}
+
+/** 异步执行完整拉取流程 */
+async function pullReport(logId: number, packageId: number, reportDate: string) {
+  const params = {
+    start_time: `${reportDate} 00:00:00`,
+    end_time: `${reportDate} 23:59:59`,
     dimension_option: 'package',
     package_ids: String(packageId),
   }
 
   try {
-    // Step 1: 提交请求并等待就绪（最多等 5 分钟）
-    await waitForReport(pullParams, 300, 15)
+    await update('mtg_agency.report_pull_logs', { status: 'running' }, 'id = $1', [logId])
 
-    // Step 2: 下载数据
-    const tsv = await downloadReport(pullParams)
+    // Step 1: 提交
+    const { code } = await submitReport(params)
+    if (code !== 200) {
+      // 轮询最多 5 分钟
+      const deadline = Date.now() + 5 * 60 * 1000
+      while (Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 15000))
+        const { code: c } = await submitReport(params)
+        if (c === 200) break
+        if (c !== 201 && c !== 202) throw new Error(`Mintegral 错误 code=${c}`)
+      }
+    }
+
+    // Step 2: 下载
+    const tsv = await downloadReport(params)
     const rows = parseTsv(tsv)
 
-    // 更新日志
     await update('mtg_agency.report_pull_logs', {
       status: 'success',
+      result_data: JSON.stringify(rows),
       file_count: 1,
       total_rows: rows.length,
       finished_at: new Date().toISOString(),
@@ -153,22 +165,16 @@ async function pullReport(logId: number, packageId: number, reportDate: string) 
 
     console.log(`[report/pull] 完成: log=${logId}, rows=${rows.length}`)
 
-    // 如果有回调地址，通知上游
+    // 回调
     const log = await queryOne<{ callback_url: string | null }>(
-      'SELECT callback_url FROM mtg_agency.report_pull_logs WHERE id = $1',
-      [logId]
+      'SELECT callback_url FROM mtg_agency.report_pull_logs WHERE id = $1', [logId]
     )
     if (log?.callback_url) {
-      try {
-        await fetch(log.callback_url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ log_id: logId, status: 'success', total_rows: rows.length }),
-          signal: AbortSignal.timeout(10000),
-        })
-      } catch {
-        // 回调失败不影响主流程
-      }
+      fetch(log.callback_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ log_id: logId, status: 'success', total_rows: rows.length }),
+      }).catch(() => {})
     }
 
   } catch (err: any) {
