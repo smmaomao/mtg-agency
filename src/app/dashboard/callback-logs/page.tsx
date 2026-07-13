@@ -27,19 +27,62 @@ interface CallbackLog {
   dsp_name: string | null
 }
 
+const eventLabels: Record<string, string> = {
+  app_open: '激活APP',
+  reged: '注册',
+  login: '登录',
+  search: '搜索',
+  content_view: '浏览',
+  share: '分享',
+  purchase: '付费',
+  first_purchase: '首次付费',
+  add_paymentinfo: '添加付款信息',
+  add_wish: '加入收藏夹',
+  add_Cart: '加入购物车',
+  fill_order: '填写订单',
+  add_deliveryinfo: '添加物流信息',
+  generate_lead: '潜力客户',
+  initiate_checkout: '退出登录',
+  lv_complete_Xt: '游戏关卡',
+  create_role: '创建游戏角色',
+  tutorial_begin: '进入新手指引',
+  tutorial_complete: '完成新手指引',
+  nextday: '次日留存',
+  key_conversion: '关键行为',
+}
+
 const eventColors: Record<string, string> = {
-  install: 'bg-blue-500/10 text-blue-600',
-  register: 'bg-green-500/10 text-green-600',
+  app_open: 'bg-blue-500/10 text-blue-600',
+  reged: 'bg-green-500/10 text-green-600',
   login: 'bg-purple-500/10 text-purple-600',
-  create_role: 'bg-teal-500/10 text-teal-600',
+  search: 'bg-sky-500/10 text-sky-600',
+  content_view: 'bg-indigo-500/10 text-indigo-600',
+  share: 'bg-cyan-500/10 text-cyan-600',
   purchase: 'bg-rose-500/10 text-rose-600',
-  retention_1d: 'bg-orange-500/10 text-orange-600',
-  retention_7d: 'bg-yellow-500/10 text-yellow-600',
-  event: 'bg-slate-500/10 text-slate-600',
+  first_purchase: 'bg-pink-500/10 text-pink-600',
+  add_paymentinfo: 'bg-fuchsia-500/10 text-fuchsia-600',
+  add_wish: 'bg-amber-500/10 text-amber-600',
+  add_Cart: 'bg-orange-500/10 text-orange-600',
+  fill_order: 'bg-lime-500/10 text-lime-600',
+  add_deliveryinfo: 'bg-emerald-500/10 text-emerald-600',
+  generate_lead: 'bg-teal-500/10 text-teal-600',
+  initiate_checkout: 'bg-red-500/10 text-red-600',
+  lv_complete_Xt: 'bg-slate-500/10 text-slate-600',
+  create_role: 'bg-violet-500/10 text-violet-600',
+  tutorial_begin: 'bg-yellow-500/10 text-yellow-600',
+  tutorial_complete: 'bg-yellow-500/10 text-yellow-600',
+  nextday: 'bg-stone-500/10 text-stone-600',
+  key_conversion: 'bg-zinc-500/10 text-zinc-600',
+  install: 'bg-blue-500/10 text-blue-600',
+  event: 'bg-gray-500/10 text-gray-600',
 }
 
 function getEventColor(key: string) {
   return eventColors[key] || 'bg-amber-500/10 text-amber-400'
+}
+
+function getEventLabel(key: string) {
+  return eventLabels[key] || key
 }
 
 export default function CallbackLogsPage() {
@@ -135,7 +178,10 @@ export default function CallbackLogsPage() {
                   <tr key={l.id} className="border-b border-gray-200/50 text-[15px] text-gray-700 hover:bg-gray-100 transition-colors">
                     <td className="py-2.5 pl-4 font-mono text-gray-400">{l.id}</td>
                     <td className="py-2.5">
-                      <span className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-mono text-[15px] ${getEventColor(l.event_name || l.event_type)}`}>{l.event_name || l.event_type}</span>
+                      <span
+                        className={`inline-flex items-center rounded-sm px-1.5 py-0.5 text-[13px] ${getEventColor(l.event_name || l.event_type)}`}
+                        title={l.event_name || l.event_type}
+                      >{getEventLabel(l.event_name || l.event_type)}</span>
                     </td>
                     <td className="py-2.5 font-mono text-[15px] text-gray-500 max-w-[180px] truncate" title={l.click_id || ''}>{l.click_id || '-'}</td>
                     <td className="py-2.5 font-mono text-[15px] text-gray-500 max-w-[160px] truncate" title={l.pixel_id || ''}>{l.pixel_id || '-'}</td>
