@@ -113,18 +113,40 @@ h1 {
 
 /* ===== Scrollbar ===== */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-zinc-700);
-  border-radius: 0;
+  background: rgba(140, 140, 150, 0.45);
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-zinc-500);
+  background: rgba(140, 140, 150, 0.7);
+}
+
+/* 浅色容器（白底弹窗 / 白底表格卡片）内使用浅灰滚动条，
+   避免深色主题下的深灰 thumb 在白底上显得突兀发黑 */
+.bg-white::-webkit-scrollbar,
+[class~="bg-white"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.bg-white::-webkit-scrollbar-thumb,
+[class~="bg-white"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+}
+.bg-white::-webkit-scrollbar-thumb:hover,
+[class~="bg-white"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.32);
+}
+
+/* Firefox 兼容（Chrome/Edge 走上面的 webkit 规则） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140, 140, 150, 0.45) transparent;
 }
 
 /* ===== Selection ===== */
