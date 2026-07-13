@@ -107,14 +107,13 @@ export default function CallbackLogsPage() {
       ) : (
         <>
           <div className="border border-gray-200 bg-white overflow-auto">
-            <table className="w-full text-left min-w-[1200px]">
+            <table className="w-full text-left min-w-[1000px]">
               <thead>
                 <tr className="border-b border-gray-200 text-[15px] tracking-[0.1em] text-gray-400">
                   <th className="py-2.5 pl-4 font-medium text-[13px] text-black">ID</th>
                   <th className="py-2.5 font-medium text-[13px] text-black">事件名称</th>
-                  <th className="py-2.5 font-medium text-[13px] text-black">标准事件</th>
                   <th className="py-2.5 font-medium text-[13px] text-black">Click ID</th>
-                  <th className="py-2.5 font-medium text-[13px] text-black">DSP 平台</th>
+                  <th className="py-2.5 font-medium text-[13px] text-black">campuuid</th>
                   <th className="py-2.5 font-medium text-[13px] text-black">响应码</th>
                   <th className="py-2.5 font-medium text-[13px] text-black">耗时</th>
                   <th className="py-2.5 font-medium text-[13px] text-black">结果</th>
@@ -124,16 +123,15 @@ export default function CallbackLogsPage() {
               </thead>
               <tbody>
                 {logs.length === 0 ? (
-                  <tr><td colSpan={10} className="py-16 text-center text-[15px] text-gray-400">暂无可查看的数据</td></tr>
+                  <tr><td colSpan={9} className="py-16 text-center text-[15px] text-gray-400">暂无可查看的数据</td></tr>
                 ) : logs.map(l => (
                   <tr key={l.id} className="border-b border-gray-200/50 text-[15px] text-gray-700 hover:bg-gray-100 transition-colors">
                     <td className="py-2.5 pl-4 font-mono text-gray-400">{l.id}</td>
                     <td className="py-2.5">
                       <span className="inline-flex items-center rounded-sm bg-amber-500/10 px-1.5 py-0.5 font-mono text-[15px] text-amber-400">{l.event_name || l.event_type}</span>
                     </td>
-                    <td className="py-2.5 font-mono text-[15px] text-gray-400">{l.standard_event_code || '-'}</td>
                     <td className="py-2.5 font-mono text-[15px] text-gray-500 max-w-[180px] truncate" title={l.click_id || ''}>{l.click_id || '-'}</td>
-                    <td className="py-2.5">{l.dsp_name || '-'}</td>
+                    <td className="py-2.5 font-mono text-[15px] text-gray-500 max-w-[160px] truncate" title={l.pixel_id || ''}>{l.pixel_id || '-'}</td>
                     <td className="py-2.5 font-mono text-gray-500">{l.response_code || l.http_status || '-'}</td>
                     <td className="py-2.5 font-mono text-gray-500">{l.response_time != null ? `${l.response_time}ms` : '-'}</td>
                     <td className="py-2.5">
