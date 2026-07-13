@@ -27,14 +27,27 @@ interface CallbackLog {
   dsp_name: string | null
 }
 
-const eventTypes = ['install', 'register', 'login', 'create_role', 'purchase', 'retention_1d', 'retention_7d', '其他']
+const eventColors: Record<string, string> = {
+  install: 'bg-blue-500/10 text-blue-600',
+  register: 'bg-green-500/10 text-green-600',
+  login: 'bg-purple-500/10 text-purple-600',
+  create_role: 'bg-teal-500/10 text-teal-600',
+  purchase: 'bg-rose-500/10 text-rose-600',
+  retention_1d: 'bg-orange-500/10 text-orange-600',
+  retention_7d: 'bg-yellow-500/10 text-yellow-600',
+  event: 'bg-slate-500/10 text-slate-600',
+}
+
+function getEventColor(key: string) {
+  return eventColors[key] || 'bg-amber-500/10 text-amber-400'
+}
 
 export default function CallbackLogsPage() {
   const [logs, setLogs] = useState<CallbackLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({ event_type: '', event_name: '', status: '', click_id: '' });
+  const [filters, setFilters] = useState({ event_name: '', status: '', click_id: '' });
   const [detail, setDetail] = useState<CallbackLog | null>(null);
   const [pageSize, setPageSize] = useState(20);
 
@@ -42,7 +55,6 @@ export default function CallbackLogsPage() {
 
   function buildUrl() {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-    if (filters.event_type) params.set('event_type', filters.event_type);
     if (filters.event_name) params.set('event_name', filters.event_name);
     if (filters.status) params.set('status', filters.status);
     if (filters.click_id) params.set('click_id', filters.click_id);
@@ -80,11 +92,6 @@ export default function CallbackLogsPage() {
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <select value={filters.event_type} onChange={e => { setFilters(f => ({ ...f, event_type: e.target.value })); setPage(1) }}
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] text-gray-700 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30">
-          <option value="">全部事件类型</option>
-          {eventTypes.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
         <input value={filters.event_name} onChange={e => { setFilters(f => ({ ...f, event_name: e.target.value })); setPage(1) }}
           placeholder="事件名称" className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] text-gray-700 placeholder-gray-400 outline-none w-[160px] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
         <input value={filters.click_id} onChange={e => { setFilters(f => ({ ...f, click_id: e.target.value })); setPage(1) }}
@@ -128,7 +135,7 @@ export default function CallbackLogsPage() {
                   <tr key={l.id} className="border-b border-gray-200/50 text-[15px] text-gray-700 hover:bg-gray-100 transition-colors">
                     <td className="py-2.5 pl-4 font-mono text-gray-400">{l.id}</td>
                     <td className="py-2.5">
-                      <span className="inline-flex items-center rounded-sm bg-amber-500/10 px-1.5 py-0.5 font-mono text-[15px] text-amber-400">{l.event_name || l.event_type}</span>
+                      <span className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-mono text-[15px] ${getEventColor(l.event_name || l.event_type)}`}>{l.event_name || l.event_type}</span>
                     </td>
                     <td className="py-2.5 font-mono text-[15px] text-gray-500 max-w-[180px] truncate" title={l.click_id || ''}>{l.click_id || '-'}</td>
                     <td className="py-2.5 font-mono text-[15px] text-gray-500 max-w-[160px] truncate" title={l.pixel_id || ''}>{l.pixel_id || '-'}</td>
