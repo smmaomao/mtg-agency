@@ -8,9 +8,12 @@ export async function handleCallback(request: Request, eventType: string) {
   const { searchParams } = new URL(request.url)
 
   // Token 验证（内存缓存，高性能）
-  const token = searchParams.get('token') || ''
-  const isValid = await validateToken(token)
+  const token = searchParams.get('token')
+  const isValid = await validateToken(token || '')
   if (!isValid) {
+    if (!token) {
+      return NextResponse.json({ error: '缺少 token 参数' }, { status: 403 })
+    }
     return NextResponse.json({ error: '无效的 token' }, { status: 403 })
   }
 
