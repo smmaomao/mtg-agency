@@ -1,4 +1,5 @@
 import { Pool } from 'pg'
+import { getRequestContext } from '@/lib/request-context'
 
 // 支持 DATABASE_URL 连接字符串，也支持单独参数
 const isLocal = !process.env.DATABASE_URL && (process.env.DB_HOST || 'localhost') === 'localhost'
@@ -51,14 +52,17 @@ async function runQuery(text: string, params?: any[]) {
   const start = performance.now()
   const preview = text.replace(/\s+/g, ' ').trim().slice(0, 100)
   const paramStr = params && params.length ? ' ' + JSON.stringify(params).slice(0, 80) : ''
+  // 关联当前请求（通过 withTiming 注入的 AsyncLocalStorage）
+  const rid = getRequestContext()?.requestId
+  const ridTag = rid ? ` rid=${rid}` : ''
   try {
     const result = await pool.query(text, params)
     const elapsed = Math.round(performance.now() - start)
-    console.log(`[DB ${elapsed}ms] ${preview}${paramStr}`)
+    console.log(`[DB ${elapsed}ms]${ridTag} ${preview}${paramStr}`)
     return result
   } catch (err: any) {
     const elapsed = Math.round(performance.now() - start)
-    console.error(`[DB ${elapsed}ms] ❌ ${preview}: ${err.message}`)
+    console.error(`[DB ${elapsed}ms]${ridTag} ❌ ${preview}: ${err.message}`)
     throw err
   }
 }
