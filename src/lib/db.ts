@@ -113,12 +113,31 @@ export async function update<T = any>(table: string, data: Record<string, any>, 
 }
 
 /**
- * 删除
+ * 删除（自动处理外键约束错误）
  */
 export async function del(table: string, where: string, params: any[]): Promise<boolean> {
   const text = `DELETE FROM ${table} WHERE ${where}`
-  const result = await runQuery(text, params)
-  return (result.rowCount ?? 0) > 0
+  try {
+    const result = await runQuery(text, params)
+    return (result.rowCount ?? 0) > 0
+  } catch (error: any) {
+    if (error.code === '23503') {
+      // 外键约束错误，返回友好提示
+      const friendlyMessages: Record<string, string> = {
+        'app_packages': '该包体已被其他数据引用，无法删除',
+        'products': '该产品已被包体引用，无法删除',
+        'customers': '该客户已被产品引用，无法删除',
+        'admin_roles': '该角色已被用户引用，无法删除',
+        'admin_menus': '该菜单已被角色引用，无法删除',
+      }
+      const msg = friendlyMessages[table] || '该数据已被其他模块引用，无法删除'
+      const err = new Error(msg) as any
+      err.code = '23503'
+      err.friendly = true
+      throw err
+    }
+    throw error
+  }
 }
 
 /**
