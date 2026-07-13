@@ -20,7 +20,7 @@ export const GET = withTiming(async (request: Request) => {
   let idx = 1
 
   if (eventType) { where += ` AND c.event_type = $${idx++}`; params.push(eventType) }
-  if (eventName) { where += ` AND c.event_name = $${idx++}`; params.push(eventName) }
+  if (eventName) { where += ` AND (c.event_name = $${idx} OR c.event_type = $${idx})`; params.push(eventName); idx++ }
   if (status) { where += ` AND c.status = $${idx++}`; params.push(status) }
   if (mappingId) { where += ` AND c.mapping_id = $${idx++}`; params.push(parseInt(mappingId)) }
   if (clickId) { where += ` AND c.click_id = $${idx++}`; params.push(clickId) }
