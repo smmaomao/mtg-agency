@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getCached } from '@/lib/apiCache'
 import RefreshButton from '@/components/RefreshButton'
 import Pagination from '@/components/Pagination'
@@ -115,12 +115,6 @@ export default function CallbackLogsPage() {
     setLoading(false);
   }
 
-  async function handleDelete(id: number) {
-    if (!confirm('确定删除此日志？')) return
-    await fetch(`/api/callback-logs?id=${id}`, { method: 'DELETE' })
-    load()
-  }
-
   function formatJson(s: string | null) {
     if (!s) return '-'
     try { return JSON.stringify(JSON.parse(s), null, 2) }
@@ -141,8 +135,7 @@ export default function CallbackLogsPage() {
         <span className="text-[13px] text-gray-400">—</span>
         <input type="date" value={filters.date_to} onChange={e => { setFilters(f => ({ ...f, date_to: e.target.value })); setPage(1) }}
           className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] text-gray-700 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
-        <input value={filters.event_name} onChange={e => { setFilters(f => ({ ...f, event_name: e.target.value })); setPage(1) }}
-          placeholder="事件名称" className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] text-gray-700 placeholder-gray-400 outline-none w-[160px] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
+        <EventNameCombobox value={filters.event_name} onChange={v => { setFilters(f => ({ ...f, event_name: v })); setPage(1) }} />
         <input value={filters.click_id} onChange={e => { setFilters(f => ({ ...f, click_id: e.target.value })); setPage(1) }}
           placeholder="点击 ID" className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] text-gray-700 placeholder-gray-400 outline-none w-[200px] font-mono focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
         <select value={filters.status} onChange={e => { setFilters(f => ({ ...f, status: e.target.value })); setPage(1) }}
@@ -167,13 +160,13 @@ export default function CallbackLogsPage() {
               <thead>
                 <tr className="border-b border-gray-200 text-[15px] tracking-[0.1em] text-gray-400">
                   <th className="py-2.5 pl-4 font-medium text-[13px] text-black">ID</th>
-                  <th className="py-2.5 font-medium text-[13px] text-black">事件名称</th>
-                  <th className="py-2.5 font-medium text-[13px] text-black">Click ID</th>
-                  <th className="py-2.5 font-medium text-[13px] text-black">campuuid</th>
+                  <th className="py-2.5 w-[210px] font-medium text-[13px] text-black">事件名称</th>
+                  <th className="py-2.5 w-[230px] font-medium text-[13px] text-black">Click ID</th>
+                  <th className="py-2.5 w-[320px] font-medium text-[13px] text-black">campuuid</th>
                   <th className="py-2.5 font-medium text-[13px] text-black">响应码</th>
                   <th className="py-2.5 font-medium text-[13px] text-black">耗时</th>
-                  <th className="py-2.5 font-medium text-[13px] text-black">结果</th>
-                  <th className="py-2.5 font-medium text-[13px] text-black">时间</th>
+                  <th className="py-2.5 w-[90px] font-medium text-[13px] text-black">结果</th>
+                  <th className="py-2.5 text-right min-w-[150px] font-medium text-[13px] text-black">时间</th>
                   <th className="py-2.5 pr-4 font-medium text-right text-[13px] text-black">操作</th>
                 </tr>
               </thead>
@@ -183,7 +176,7 @@ export default function CallbackLogsPage() {
                 ) : logs.map(l => (
                   <tr key={l.id} className="border-b border-gray-200/50 text-[15px] text-gray-700 hover:bg-gray-100 transition-colors">
                     <td className="py-2.5 pl-4 font-mono text-gray-400">{l.id}</td>
-                    <td className="py-2.5">
+                    <td className="py-2.5 w-[210px]">
                       {(() => {
                         const key = l.event_name || l.event_type
                         const label = eventLabels[key]
@@ -194,18 +187,17 @@ export default function CallbackLogsPage() {
                         )
                       })()}
                     </td>
-                    <td className="py-2.5 font-mono text-[15px] text-gray-500 max-w-[180px] truncate" title={l.click_id || ''}>{l.click_id || '-'}</td>
-                    <td className="py-2.5 font-mono text-[15px] text-gray-500 max-w-[160px] truncate" title={l.pixel_id || ''}>{l.pixel_id || '-'}</td>
+                    <td className="py-2.5 w-[230px] font-mono text-[15px] text-gray-500 max-w-[230px] truncate" title={l.click_id || ''}>{l.click_id || '-'}</td>
+                    <td className="py-2.5 w-[320px] font-mono text-[15px] text-gray-500 max-w-[320px] truncate" title={l.pixel_id || ''}>{l.pixel_id || '-'}</td>
                     <td className="py-2.5 font-mono text-gray-500">{l.response_code || l.http_status || '-'}</td>
                     <td className="py-2.5 font-mono text-gray-500">{l.response_time != null ? `${l.response_time}ms` : '-'}</td>
-                    <td className="py-2.5">
+                    <td className="py-2.5 w-[90px]">
                       <span className={`h-1.5 w-1.5 rounded-full inline-block mr-1.5 ${l.status === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
                       {l.status === 'success' ? '成功' : '失败'}
                     </td>
-                    <td className="py-2.5 text-gray-400 text-[15px]">{new Date(l.created_at).toLocaleString('zh-CN')}</td>
-                    <td className="py-2.5 pr-4 text-right space-x-2">
+                    <td className="py-2.5 text-right min-w-[150px] text-gray-400 text-[15px]">{new Date(l.created_at).toLocaleString('zh-CN')}</td>
+                    <td className="py-2.5 pr-4 text-right">
                       <button onClick={() => setDetail(l)} className="text-zinc-500 hover:text-gray-800">详情</button>
-                      <button onClick={() => handleDelete(l.id)} className="text-zinc-600 hover:text-red-400">删除</button>
                     </td>
                   </tr>
                 ))}
@@ -269,6 +261,37 @@ export default function CallbackLogsPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function EventNameCombobox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const options = ['install', 'app_open', 'reged', 'purchase', 'first_purchase']
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [])
+  return (
+    <div ref={ref} className="relative">
+      <input value={value} onChange={e => onChange(e.target.value)} onFocus={() => setOpen(true)}
+        placeholder="事件名称" className="w-[160px] rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] text-gray-700 placeholder-gray-400 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
+      {open && (
+        <div className="absolute z-30 mt-1 w-[200px] rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+          {options.map(opt => (
+            <button key={opt} type="button" onClick={() => { onChange(opt); setOpen(false) }}
+              className="flex w-full items-center px-3 py-1.5 text-left hover:bg-gray-100">
+              <span className={`inline-flex items-center rounded-sm px-1.5 py-0.5 font-mono text-[12px] ${getEventColor(opt)}`}>
+                {opt}{eventLabels[opt] ? <span className="ml-1 text-[11px] opacity-70">({eventLabels[opt]})</span> : null}
+              </span>
+            </button>
+          ))}
         </div>
       )}
     </div>
