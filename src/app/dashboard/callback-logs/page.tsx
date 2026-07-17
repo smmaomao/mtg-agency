@@ -161,11 +161,11 @@ export default function CallbackLogsPage() {
                 <tr className="border-b border-gray-200 text-[15px] tracking-[0.1em] text-gray-400">
                   <th className="py-2.5 pl-4 font-medium text-[13px] text-black">ID</th>
                   <th className="py-2.5 w-[210px] font-medium text-[13px] text-black">事件名称</th>
-                  <th className="py-2.5 w-[230px] font-medium text-[13px] text-black">Click ID</th>
+                  <th className="py-2.5 w-[300px] font-medium text-[13px] text-black">Click ID</th>
                   <th className="py-2.5 w-[320px] font-medium text-[13px] text-black">campuuid</th>
-                  <th className="py-2.5 font-medium text-[13px] text-black">响应码</th>
-                  <th className="py-2.5 font-medium text-[13px] text-black">耗时</th>
-                  <th className="py-2.5 w-[90px] font-medium text-[13px] text-black">结果</th>
+                  <th className="py-2.5 text-right px-4 font-medium text-[13px] text-black">响应码</th>
+                  <th className="py-2.5 text-right px-4 font-medium text-[13px] text-black">耗时</th>
+                  <th className="py-2.5 w-[90px] text-right px-4 font-medium text-[13px] text-black">结果</th>
                   <th className="py-2.5 text-right min-w-[150px] font-medium text-[13px] text-black">时间</th>
                   <th className="py-2.5 pr-4 font-medium text-right text-[13px] text-black">操作</th>
                 </tr>
@@ -187,11 +187,11 @@ export default function CallbackLogsPage() {
                         )
                       })()}
                     </td>
-                    <td className="py-2.5 w-[230px] font-mono text-[15px] text-gray-500 max-w-[230px] truncate" title={l.click_id || ''}>{l.click_id || '-'}</td>
+                    <td className="py-2.5 w-[300px] font-mono text-[15px] text-gray-500 max-w-[300px] truncate" title={l.click_id || ''}>{l.click_id || '-'}</td>
                     <td className="py-2.5 w-[320px] font-mono text-[15px] text-gray-500 max-w-[320px] truncate" title={l.pixel_id || ''}>{l.pixel_id || '-'}</td>
-                    <td className="py-2.5 font-mono text-gray-500">{l.response_code || l.http_status || '-'}</td>
-                    <td className="py-2.5 font-mono text-gray-500">{l.response_time != null ? `${l.response_time}ms` : '-'}</td>
-                    <td className="py-2.5 w-[90px]">
+                    <td className="py-2.5 text-right px-4 font-mono text-gray-500">{l.response_code || l.http_status || '-'}</td>
+                    <td className="py-2.5 text-right px-4 font-mono text-gray-500">{l.response_time != null ? `${l.response_time}ms` : '-'}</td>
+                    <td className="py-2.5 w-[90px] text-right px-4">
                       <span className={`h-1.5 w-1.5 rounded-full inline-block mr-1.5 ${l.status === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
                       {l.status === 'success' ? '成功' : '失败'}
                     </td>
