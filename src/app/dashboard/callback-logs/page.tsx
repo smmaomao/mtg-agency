@@ -14,7 +14,6 @@ interface CallbackLog {
   request_url: string | null
   request_body: string | null
   response_body: string | null
-  callback_data: string | null
   response_code: number | null
   response_time: number | null
   http_status: number | null
@@ -232,7 +231,7 @@ export default function CallbackLogsPage() {
                 <DetailField label="事件类型" value={detail.event_type} />
                 <DetailField label="标准事件码" value={detail.standard_event_code || '-'} />
                 <DetailField label="Click ID" value={detail.click_id || '-'} mono />
-                <DetailField label="Pixel ID" value={detail.pixel_id || '-'} />
+                <DetailField label="campuuid" value={detail.pixel_id || '-'} />
                 <DetailField label="DSP 平台" value={detail.dsp_name || '-'} />
                 <DetailField label="包名" value={detail.package_name || '-'} mono />
                 <DetailField label="响应码" value={String(detail.response_code || detail.http_status || '-')} />
@@ -254,10 +253,6 @@ export default function CallbackLogsPage() {
                   <label className="mb-1.5 block text-[9px] font-medium tracking-[0.15em] text-gray-400 uppercase">响应体</label>
                   <pre className="whitespace-pre-wrap break-all border border-gray-200 bg-white px-3 py-2 text-[11px] text-gray-500 font-mono max-h-[200px] overflow-auto">{formatJson(detail.response_body)}</pre>
                 </div>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[9px] font-medium tracking-[0.15em] text-gray-400 uppercase">回调数据</label>
-                <pre className="whitespace-pre-wrap break-all border border-gray-200 bg-white px-3 py-2 text-[11px] text-gray-500 font-mono max-h-[180px] overflow-auto">{formatJson(detail.callback_data)}</pre>
               </div>
             </div>
           </div>

@@ -1,22 +1,12 @@
 import { NextResponse } from 'next/server'
 import { insert, update } from '@/lib/db'
-import { validateToken } from '@/lib/tokenCache'
 
 const POSTBACK_BASE = 'http://postback.mintegral.net'
 
 export async function handleCallback(request: Request, eventType: string) {
   const { searchParams } = new URL(request.url)
 
-  // Token 验证（内存缓存，高性能）
-  const token = searchParams.get('token')
-  const isValid = await validateToken(token || '')
-  if (!isValid) {
-    if (!token) {
-      return NextResponse.json({ error: '缺少 token 参数' }, { status: 403 })
-    }
-    return NextResponse.json({ error: '无效的 token' }, { status: 403 })
-  }
-
+  // 回传端点不做 token 校验：来源为 Adjust 等 MMP，不携带我方 token，需原样透传
   // 提取参数
   const clientIp = searchParams.get('ip') || null
   const campuuid = searchParams.get('campuuid') || ''
@@ -69,6 +59,20 @@ export async function handleCallback(request: Request, eventType: string) {
   if (!forwardParams.has('clickid') && clickid) forwardParams.set('clickid', clickid)
 
   const fullForwardUrl = `${forwardUrl}?${forwardParams.toString()}`
+
+  // 默认走真实转发；仅当显式开启 MOCK_FORWARD=true（本地开发）时才跳过
+  // Mintegral 转发并直接标记成功。线上未配置该变量，安全走真实转发。
+  if (process.env.MOCK_FORWARD === 'true') {
+    await update('mtg_agency.callback_logs', {
+      response_code: 200,
+      http_status: 200,
+      response_body: 'local-mock-success',
+      response_time: 0,
+      status: 'success',
+    }, 'id = $1', [log.id])
+    console.log(`[events] ${clientIp} | ${eventType} | LOCAL MOCK success`)
+    return NextResponse.json({ success: true })
+  }
 
   try {
     const t0 = Date.now()

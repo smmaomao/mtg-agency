@@ -41,6 +41,23 @@ INSERT INTO admin_roles (id, name, description, menu_permissions)
 VALUES (1, '超级管理员', '拥有所有权限', '{}')
 ON CONFLICT (id) DO NOTHING;
 
+-- 管理菜单种子数据（取自本地库现有菜单结构）
+INSERT INTO admin_menus (id, name, path, icon, parent_id, sort_order) VALUES
+  (2, '系统管理', '', 'settings', 0, 2),
+  (3, '菜单管理', '/dashboard/menus', 'menu', 2, 5),
+  (4, '角色管理', '/dashboard/roles', 'shield', 2, 2),
+  (5, '用户管理', '/dashboard/users', 'users', 2, 3),
+  (6, '产品管理', '', 'package', 0, 3),
+  (7, '客户管理', '/dashboard/customers', 'building', 6, 1),
+  (8, '产品管理', '/dashboard/products', 'box', 6, 2),
+  (9, '包体管理', '/dashboard/packages', 'archive', 6, 3),
+  (10, '转发管理', '', 'share', 0, 4),
+  (11, '包映射配置', '/dashboard/dsp-mapping', 'link', 10, 1),
+  (12, '事件回传日志', '/dashboard/callback-logs', 'refresh', 10, 2),
+  (13, '报表拉取日志', '/dashboard/report-logs', 'file-text', 10, 3),
+  (14, '操作日志', '/dashboard/audit-logs', 'clipboard-list', 2, 10)
+ON CONFLICT (id) DO NOTHING;
+
 -- 关键：显式插入 id 不会推进 SERIAL 序列，需手动将序列对齐到当前最大值，
 -- 否则后续 INSERT 不指定 id 时会得到 1，与种子数据冲突。
 -- 这里对 mtg_agency 下「所有」序列做统一对齐（含 admin_roles / admin_users /
@@ -73,16 +90,118 @@ INSERT INTO admin_users (username, password_hash, real_name, role_id, status)
 VALUES ('admin', '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMQkf9Rmy6C0FQvZgVvHOJCHfA7HOLS', '超级管理员', 1, 1)
 ON CONFLICT (username) DO NOTHING;
 
--- Events 回调白名单表
-CREATE TABLE IF NOT EXISTS ip_whitelist (
+-- ============================================================
+-- 业务表（原文件缺失，以下为补全）
+-- ============================================================
+
+-- 客户管理
+CREATE TABLE IF NOT EXISTS customers (
   id SERIAL PRIMARY KEY,
-  token VARCHAR(255) NOT NULL, -- 访问 Token
-  name VARCHAR(255) DEFAULT '', -- 调用方名称
-  remark VARCHAR(255) DEFAULT '',
-  status SMALLINT DEFAULT 1, -- 1=启用 0=禁用
+  name VARCHAR(100) NOT NULL,
+  contact_person VARCHAR(50) DEFAULT '',
+  contact_phone VARCHAR(50) DEFAULT '',
+  email VARCHAR(100) DEFAULT '',
+  open_date DATE,
+  remark TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 唯一索引
-CREATE UNIQUE INDEX IF NOT EXISTS idx_ip_whitelist_token ON ip_whitelist(token);
+-- 产品管理（归属客户）
+CREATE TABLE IF NOT EXISTS products (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(200) NOT NULL,
+  customer_id INTEGER REFERENCES customers(id) ON DELETE RESTRICT,
+  product_type VARCHAR(20) DEFAULT 'game',
+  remark TEXT DEFAULT '',
+  icon_url TEXT,
+  description TEXT,
+  countries TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 包体管理（归属产品）
+CREATE TABLE IF NOT EXISTS app_packages (
+  id SERIAL PRIMARY KEY,
+  product_id INTEGER REFERENCES products(id) ON DELETE RESTRICT,
+  name VARCHAR(200) NOT NULL,
+  platform VARCHAR(20) DEFAULT 'android',
+  version VARCHAR(50),
+  download_url TEXT,
+  icon_url TEXT,
+  remark TEXT DEFAULT '',
+  package_name VARCHAR(200),
+  landing_page_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 包映射配置（包体 → DSP / 渠道，含 campuuid）
+CREATE TABLE IF NOT EXISTS packages_dsp_mapping (
+  id SERIAL PRIMARY KEY,
+  customer_id INTEGER,
+  product_id INTEGER,
+  package_id INTEGER REFERENCES app_packages(id) ON DELETE RESTRICT,
+  dsp_name VARCHAR(100) NOT NULL,
+  channel_name VARCHAR(100),
+  dsp_package_id VARCHAR(200),
+  campuuid VARCHAR(200),
+  landing_page_url TEXT,
+  status VARCHAR(20) DEFAULT 'active',
+  remark TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 事件回传日志
+CREATE TABLE IF NOT EXISTS callback_logs (
+  id SERIAL PRIMARY KEY,
+  mapping_id INTEGER,
+  event_type VARCHAR(50),
+  event_name VARCHAR(100),
+  click_id VARCHAR(200),
+  request_url TEXT,
+  request_body TEXT,
+  response_body TEXT,
+  response_code INTEGER,
+  response_time INTEGER,
+  http_status INTEGER,
+  status VARCHAR(20) DEFAULT 'pending',
+  pixel_id VARCHAR(200),
+  package_name VARCHAR(200),
+  standard_event_code VARCHAR(100),
+  ip_address VARCHAR(50),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 报表拉取日志
+CREATE TABLE IF NOT EXISTS report_pull_logs (
+  id SERIAL PRIMARY KEY,
+  mapping_id INTEGER,
+  report_type VARCHAR(50) DEFAULT 'mintegral_daily',
+  report_date DATE,
+  pull_params TEXT,
+  status VARCHAR(20) DEFAULT 'pending',
+  ip_address VARCHAR(50),
+  file_count INTEGER DEFAULT 0,
+  total_rows INTEGER DEFAULT 0,
+  result_data TEXT,
+  started_at TIMESTAMPTZ,
+  finished_at TIMESTAMPTZ,
+  error_message TEXT,
+  callback_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 操作审计日志
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER,
+  username VARCHAR(100) DEFAULT '',
+  action VARCHAR(20),
+  target_table VARCHAR(100),
+  target_id INTEGER,
+  detail TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

@@ -3,7 +3,7 @@ import { jwtVerify, SignJWT } from 'jose'
 import bcrypt from 'bcryptjs'
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'admin-system-jwt-secret-key-2024'
+  process.env.JWT_SECRET || 'admin-system-jwt-secret-key-2026'
 )
 
 export interface UserPayload {

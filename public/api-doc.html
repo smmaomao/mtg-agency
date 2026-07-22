@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>s2s对接文档</title>
+<style>
+  :root {
+    --primary: #f97316;
+    --primary-soft: #ffedd5;
+    --primary-border: #fed7aa;
+    --ink: #18181b;
+    --muted: #71717a;
+    --line: #e4e4e7;
+    --code-bg: #f4f4f5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--ink);
+    background: #fafafa;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 48px 24px 80px; }
+  header { border-bottom: 1px solid var(--line); padding-bottom: 24px; margin-bottom: 32px; }
+  header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }
+  header p { color: var(--muted); margin-top: 8px; font-size: 14px; }
+  .badge {
+    display: inline-block; margin-top: 14px; font-size: 12px; color: #b45309;
+    background: #fffbeb; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 999px;
+  }
+  h2 { font-size: 20px; font-weight: 700; margin: 40px 0 16px; padding-left: 12px; border-left: 4px solid var(--primary); }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 10px; color: #27272a; }
+  p { margin: 12px 0; color: #3f3f46; font-size: 15px; }
+  ul { margin: 12px 0 12px 22px; color: #3f3f46; font-size: 15px; }
+  li { margin: 6px 0; }
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    background: var(--code-bg); padding: 2px 6px; border-radius: 5px; font-size: 13px; color: #be123c;
+  }
+  pre {
+    background: #1e1e22; color: #e4e4e7; padding: 18px 20px; border-radius: 12px;
+    overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 14px 0;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border: 1px solid var(--line); vertical-align: top; }
+  th { background: #f4f4f5; font-weight: 600; color: #27272a; white-space: nowrap; }
+  td code { font-size: 12.5px; }
+  .endpoint { background: var(--primary-soft); border: 1px solid var(--primary-border); border-radius: 10px; padding: 14px 18px; margin: 12px 0; }
+  .endpoint b { color: #c2410c; }
+  .note { background: #f0f9ff; border: 1px solid #bae6fd; color: #075985; border-radius: 10px; padding: 12px 16px; font-size: 14px; margin: 14px 0; }
+  .placeholder { color: #b45309; font-weight: 600; }
+  footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>s2s对接文档</h1>
+    <p>本页用于指导广告归因平台（Adjust、AppsFlyer 等 MMP）或广告主的s2s服务，将转化回传（Postback）发送至本服务。</p>
+    <span class="badge">以下域名 postback.example.com 为占位伪域名，对接前确认及分配</span>
+  </header>
+
+  <p>本服务采用通用回传（Postback）格式。对接方只需按下方参数说明拼接回传地址即可，其余参数含义、取值均保持一致。</p>
+  <ul>
+    <li>请求方式：<code>HTTP GET</code>，所有参数通过 Query String 传递。</li>
+  </ul>
+
+  <h2>一、基础域名与端点路径</h2>
+  <ul>
+    <li><strong>基础域名</strong>：<code class="placeholder">https://postback.example.com</code></li>
+    <li><strong>请求方式</strong>：HTTP GET</li>
+  </ul>
+  <div class="endpoint"><b>/install</b> &nbsp;—&nbsp; 计费事件回调（广告主结算依据，如安装激活）</div>
+  <div class="endpoint"><b>/event</b> &nbsp;—&nbsp; 非计费事件回调（用于投放效果优化，如注册、付费等）</div>
+
+  <pre><code># 计费事件
+https://postback.example.com/install?clickid=xxx&amp;campuuid=xxx&amp;...
+
+# 非计费事件
+https://postback.example.com/event?clickid=xxx&amp;campuuid=xxx&amp;event_name=purchase&amp;...</code></pre>
+
+  <h2>二、Query 参数说明</h2>
+  <p>所有参数均通过 URL Query String 传递，下表为支持的回传参数：</p>
+  <table>
+    <thead>
+      <tr><th>参数名</th><th>是否必传</th><th>含义</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>clickid</code></td><td>是</td><td>点击 ID（点击唯一标志，例：<code>mtg0a1b2c3d4e5f6g7h8i9j1x2y</code>）</td></tr>
+      <tr><td><code>campuuid</code></td><td>是</td><td>广告单元 ID（推广唯一标志，例：<code>game_ios_us_mtg</code>）</td></tr>
+      <tr><td><code>idfa</code></td><td>特定场景</td><td>推广 iOS 应用时必传，Android 不传（例：<code>3E0046F7-8BD4-4F3E-9F91-358B137D2BF0</code>）</td></tr>
+      <tr><td><code>md5_idfa</code></td><td>特定场景</td><td>IDFA 原值 MD5（32 位小写）；以 IDFA MD5 匹配归因时必传，Android 不传</td></tr>
+      <tr><td><code>gaid</code></td><td>特定场景</td><td>推广非中国地区 Android 应用时必传，iOS 不传（例：<code>7268ceb0-5411-4004-b7cb-bd1fee4b6277</code>）</td></tr>
+      <tr><td><code>md5_gaid</code></td><td>特定场景</td><td>GAID 原值 MD5（32 位小写）；推广非中国地区 Android 应用时必传，iOS 不传</td></tr>
+      <tr><td><code>imei</code></td><td>特定场景</td><td>推广中国地区 Android 应用时必传（Android 10+ 获取不到可不填），iOS 不传</td></tr>
+      <tr><td><code>md5_imei</code></td><td>特定场景</td><td>IMEI 原值 MD5（32 位小写）；以 IMEI MD5 匹配归因时必传，iOS 不传</td></tr>
+      <tr><td><code>devid</code></td><td>特定场景</td><td>推广 Android 应用以 Android ID 匹配归因时必传，iOS 不传</td></tr>
+      <tr><td><code>md5_devid</code></td><td>特定场景</td><td>Android ID 原值 MD5（32 位小写）；以 Android ID MD5 匹配归因时必传，iOS 不传</td></tr>
+      <tr><td><code>oaid</code></td><td>特定场景</td><td>推广 Android 应用以 OAID 匹配归因时必传，iOS 不传</td></tr>
+      <tr><td><code>md5_oaid</code></td><td>特定场景</td><td>OAID 原值 MD5（32 位小写）；以 OAID MD5 匹配归因时必传，iOS 不传</td></tr>
+      <tr><td><code>mac</code></td><td>特定场景</td><td>以 MAC 地址匹配归因时必传（例：<code>10:2A:B3:D1:52:F4</code>）</td></tr>
+      <tr><td><code>md5_mac</code></td><td>特定场景</td><td>MAC 原值 MD5（32 位小写）；以 MAC MD5 匹配归因时必传</td></tr>
+      <tr><td><code>pl</code></td><td>否</td><td>系统平台（例：<code>android</code>）</td></tr>
+      <tr><td><code>os</code></td><td>否</td><td>系统版本（例：<code>8.0.1</code>）</td></tr>
+      <tr><td><code>device</code></td><td>否</td><td>设备型号（例：<code>Mi-4c</code>）</td></tr>
+      <tr><td><code>ip</code></td><td>否</td><td>用户 IP 地址（例：<code>59.189.187.99</code>）</td></tr>
+      <tr><td><code>country</code></td><td>否</td><td>用户所在地区简码（例：<code>CN</code>）</td></tr>
+      <tr><td><code>app_version</code></td><td>否</td><td>推广的应用版本（例：<code>1.1.2</code>）</td></tr>
+      <tr><td><code>type</code></td><td>否</td><td>三方名称或广告主名称（例：<code>s2s</code>）</td></tr>
+      <tr><td><code>install_time</code></td><td>是</td><td>计费转化事件触发时间戳，<strong>所有事件（计费 + 非计费）回调均必传</strong>（Unix 秒，例：<code>1486088825</code>）</td></tr>
+      <tr><td><code>event_time</code></td><td>是</td><td>非计费转化事件触发时间戳（Unix 秒，例：<code>1486088825</code>）</td></tr>
+      <tr><td><code>event_name</code></td><td>特定场景</td><td>事件类型，<strong>调用非计费事件回调时必传</strong>，计费回调时选填。如：<code>app_open</code>、<code>reged</code>、<code>login</code>、<code>purchase</code> 等</td></tr>
+      <tr><td><code>event_value</code></td><td>特定场景</td><td>事件关联数据值，<code>event_name</code> 为付费相关（如 <code>purchase</code>）时必传，其他选填（例：<code>1.90</code>）</td></tr>
+      <tr><td><code>currency</code></td><td>特定场景</td><td>货币类型，<code>event_name</code> 为付费相关时必传，其他选填。如：<code>CNY</code>、<code>USD</code>、<code>EUR</code>、<code>JPY</code>、<code>GBP</code></td></tr>
+      <tr><td><code>attribu_type</code></td><td>否</td><td>是否归因给本平台，<code>0</code> 或 <code>1</code>；<code>1</code> 为归因给本平台</td></tr>
+      <tr><td><code>app_id</code></td><td>否</td><td>应用包名（Android：<code>com.xxx</code>；iOS：<code>idxxx</code>）</td></tr>
+    </tbody>
+  </table>
+
+  <p style="color:#d92d20; font-weight:700; line-height:1.7; margin-top:1rem;">
+    注意：我方提供的 <code>campuuid</code> 是带动态后缀的，例如 <code>game_ios_us_0713_wbl_*</code>——
+    刚开始可能是 <code>game_ios_us_0713_wbl_cpi</code>，过一段时间会变成 <code>game_ios_us_0713_wbl_cpm</code>。
+    因此对接方需要<strong>保存当时 clickid 对应的 campuuid</strong>，在回传（Postback）时原样带回。
+  </p>
+
+  <h2>三、响应说明（返回值）</h2>
+  <ul>
+    <li><strong>HTTP 状态码</strong>：<code>200</code></li>
+  </ul>
+  <h3>计费事件回调（/install）</h3>
+  <ul>
+    <li>返回内容包含 <code>error</code> 字段。</li>
+    <li><code>error</code> 值为 <code>0</code> 时表示成功；不为 <code>0</code> 时表示失败。</li>
+  </ul>
+  <h3>非计费事件回调（/event）</h3>
+  <ul>
+    <li>返回内容包含 <code>ret</code> 字段与 <code>msg</code> 字段。</li>
+    <li><code>ret</code> 值为 <code>0</code> 时表示成功；不为 <code>0</code> 时表示失败，<code>msg</code> 返回错误信息，枚举如下：</li>
+  </ul>
+  <table>
+    <thead><tr><th>msg</th><th>含义</th></tr></thead>
+    <tbody>
+      <tr><td><code>"Event Name Not Correct"</code></td><td><code>event_name</code> 参数不能为空</td></tr>
+      <tr><td><code>"Campaign Not Correct"</code></td><td><code>campuuid</code>（即 <code>uuid</code>）参数不能为空</td></tr>
+      <tr><td><code>"Clickid Not Correct"</code></td><td><code>clickid</code> 参数格式不正确</td></tr>
+    </tbody>
+  </table>
+
+  <h2>四、对接示例</h2>
+  <pre><code># 计费回传示例
+https://postback.example.com/install?campuuid=game_ios_us_0713_wbl_cpi&amp;clickid=mtg0a1b2c3d4e5f6g7h8i9j1x2y&amp;idfa=3E0046F7-8BD4-4F3E-9F91-358B137D2BF0&amp;type=s2s&amp;install_time=1486088825
+
+# 非计费回传示例
+https://postback.example.com/event?campuuid=game_ios_us_0713_wbl_cpi&amp;clickid=mtg0a1b2c3d4e5f6g7h8i9j1x2y&amp;idfa=3E0046F7-8BD4-4F3E-9F91-358B137D2BF0&amp;type=s2s&amp;event_time=1486088900&amp;event_name=purchase&amp;event_value={"currency":"USD","revenue":1.9}</code></pre>
+
+  <h2>五、事件类型定义（event_name）</h2>
+  <p>说明：<code>event_name</code> 指的是事件类型，是一个字符串类型枚举值。具体取值如下：</p>
+  <table>
+    <thead>
+      <tr><th>取值</th><th>事件名称</th><th>定义</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>app_open</code></td><td>激活APP</td><td>用户下载安装完毕应用之后，打开应用</td></tr>
+      <tr><td><code>reged</code></td><td>注册</td><td>用户完成下载、安装并且打开应用后，完成注册账号信息提交</td></tr>
+      <tr><td><code>login</code></td><td>登录</td><td>用户完成下载、安装并且打开应用后，完成账号登录操作</td></tr>
+      <tr><td><code>search</code></td><td>搜索</td><td>用户完成下载、安装并且打开应用后，完成一次搜索操作</td></tr>
+      <tr><td><code>content_view</code></td><td>浏览</td><td>用户完成下载、安装并且打开应用后，完成一次浏览行为</td></tr>
+      <tr><td><code>share</code></td><td>分享</td><td>用户完成下载、安装并且打开应用后，完成一次分享操作</td></tr>
+      <tr><td><code>purchase</code></td><td>付费</td><td>用户完成下载、安装并且打开应用后，完成一笔付款行为</td></tr>
+      <tr><td><code>first_purchase</code></td><td>首次付费</td><td>用户完成下载、安装并且打开应用后，完成在该应用的第一次付费行为</td></tr>
+      <tr><td><code>add_paymentinfo</code></td><td>添加付款信息</td><td>用户完成添加付款信息操作，如选择选择付款方式/绑定付款方式等</td></tr>
+      <tr><td><code>add_wish</code></td><td>加入收藏夹</td><td>用户完成加入收藏夹/心愿单的操作</td></tr>
+      <tr><td><code>add_Cart</code></td><td>加入购入车</td><td>用户完成将商品加入购物车的操作</td></tr>
+      <tr><td><code>fill_order</code></td><td>填写订单</td><td>用户进行订单提交前，填写并提交订单信息的操作</td></tr>
+      <tr><td><code>add_deliveryinfo</code></td><td>添加快递信息</td><td>用户添加快递信息的操作，如收件人姓名/电话/地址等</td></tr>
+      <tr><td><code>generate_lead</code></td><td>带来潜力客户</td><td>用于在应用内提交用户信息等操作</td></tr>
+      <tr><td><code>initiate_checkout</code></td><td>退出登录</td><td>用户在应用内进行退出登录操作</td></tr>
+      <tr><td><code>lv_complete_Xt</code></td><td>游戏关卡</td><td>对于游戏类应用，用户完成下载、安装并且打开应用后，完成指定游戏关卡通关操作</td></tr>
+      <tr><td><code>create_role</code></td><td>创建游戏角色</td><td>对于游戏类应用，用户完成下载、安装并且打开应用后，完成创建游戏角色操作</td></tr>
+      <tr><td><code>tutorial_begin</code></td><td>进入新手指引</td><td>用户完成下载、安装并且打开应用后，完成进入新手指引操作</td></tr>
+      <tr><td><code>tutorial_complete</code></td><td>完成新手指引</td><td>用户完成下载、安装并且打开应用后，完成进入新手指引学习</td></tr>
+      <tr><td><code>nextday</code></td><td>次日留存</td><td>用户首日完成下载、安装并打开应用后，第二个自然日再次打开应用</td></tr>
+      <tr><td><code>key_conversion</code></td><td>关键行为</td><td>用户完成下载、安装并打开应用后，触发多重行为（自定义）后可被判定为高质量用户（主要用于IAA产品判断首日回收是否达标）</td></tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

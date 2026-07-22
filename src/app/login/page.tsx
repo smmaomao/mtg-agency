@@ -62,6 +62,20 @@ export default function LoginPage() {
 
   return (
     <div data-theme={theme} className="relative flex min-h-screen items-center justify-center p-8">
+      {/* 右上角：开放 API 文档入口 */}
+      <a
+        href="/api-doc.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="absolute right-6 top-6 z-20 flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white/80 px-4 py-2 text-sm font-medium text-zinc-600 shadow-sm backdrop-blur transition-colors hover:border-[var(--primary)] hover:text-[var(--primary)]"
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+        </svg>
+        API 文档
+      </a>
+
       {/* Background */}
       <div className="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/bg-2.jpg)' }} />
 

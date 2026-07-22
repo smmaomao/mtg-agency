@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>部署与业务操作指南</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #f5f6f8; color: #1f2937; line-height: 1.7; }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 48px 24px 80px; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em; }
+    .sub { color: #6b7280; font-size: 14px; margin-bottom: 32px; }
+    h2 { font-size: 19px; font-weight: 600; margin: 40px 0 14px; padding-bottom: 8px;
+      border-bottom: 2px solid #e5e7eb; color: #111827; }
+    h3 { font-size: 15px; font-weight: 600; margin: 22px 0 8px; color: #374151; }
+    p, li { font-size: 14px; color: #374151; }
+    ul { padding-left: 22px; margin: 8px 0; }
+    li { margin: 5px 0; }
+    code { background: #eef2f7; padding: 1px 6px; border-radius: 4px; font-size: 13px;
+      font-family: "SFMono-Regular", Consolas, monospace; color: #b91c1c; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 16px 18px; border-radius: 10px;
+      overflow-x: auto; font-size: 13px; line-height: 1.6; margin: 12px 0; }
+    pre code { background: none; color: inherit; padding: 0; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px 22px; margin: 14px 0; }
+    .badge { display: inline-block; background: #fef3c7; color: #92400e; font-size: 12px;
+      font-weight: 600; padding: 4px 12px; border-radius: 999px; margin-bottom: 16px; }
+    .note { background: #eff6ff; border-left: 3px solid #3b82f6; padding: 12px 16px;
+      border-radius: 6px; font-size: 13px; color: #1e40af; margin: 14px 0; }
+    .warn { background: #fef2f2; border-left: 3px solid #ef4444; padding: 12px 16px;
+      border-radius: 6px; font-size: 13px; color: #991b1b; margin: 14px 0; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+    th, td { border: 1px solid #e5e7eb; padding: 9px 12px; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; color: #374151; }
+    .flow { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0; }
+    .step { background: #fff; border: 1px solid #d1d5db; border-radius: 8px; padding: 10px 14px;
+      font-size: 13px; font-weight: 500; }
+    .arrow { color: #9ca3af; font-size: 18px; }
+    .num { display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px; border-radius: 50%; background: #2563eb; color: #fff;
+      font-size: 12px; font-weight: 700; margin-right: 8px; }
+    .shot { display: block; max-width: 100%; margin: 14px 0 4px;
+      border: 1px solid #e5e7eb; border-radius: 10px; padding: 6px;
+      background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+    .shot-cap { font-size: 12px; color: #9ca3af; margin: 0 0 18px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>部署与业务操作指南</h1>
+  <div class="sub">MTG Agency · 服务器架构 / 部署流程 / 业务配置流程</div>
+
+  <span class="badge">内部技术 & 操作文档 · 非对外</span>
+
+  <!-- ============ 一、系统架构 ============ -->
+  <h2>一、系统架构</h2>
+  <p>MTG Agency 是一套广告归因回传（Postback / S2S）转发服务，提供对外回传接收与管理后台能力，共用同一个数据库。</p>
+  <ul>
+    <li><strong>开发语言 / 框架</strong>：Next.js（App Router）+ React 19 + TypeScript</li>
+    <li><strong>数据库</strong>：PostgreSQL（Supabase，事务池 6543 端口）</li>
+  </ul>
+
+  <div class="note">
+    数据流：<code>s2s 回传</code> → <code>/install|/event</code> → 先落库 <code>callback_logs</code>(pending) → 转发 <code>postback.mintegral.net</code> → 回写日志状态
+  </div>
+
+  <!-- ============ 二、服务器部署 ============ -->
+  <h2>二、服务器部署（Vercel）</h2>
+  <p>项目已包含 <code>vercel.json</code>，推荐部署到 Vercel。本地自托管则用 <code>next build</code> + <code>next start</code>。</p>
+
+  <h3>部署步骤</h3>
+  <ol>
+    <li>将代码推送到 Git 仓库（已对接 Vercel 自动部署）。</li>
+    <li>在 Vercel 项目 <strong>Settings → Environment Variables</strong> 配置以下变量（见下表）。</li>
+    <li>触发 Deploy，等待 <code>npm run build</code> 成功。</li>
+    <li>部署完成后，先用默认管理员登录后台核对（默认账号见下方说明）。</li>
+  </ol>
+  <p style="color: red; font-weight: 500;">* 注意：Vercel 和 Supabase 数据库要选同一个地区（都是新加坡或者香港），这样才能降低延迟。</p>
+  <p>Vercel 和 Supabase 都是免费的（一些服务需要收费，免费的对于我们来说足够了），且运维自动化。如果想通过自己服务器来部署也是可以的，对接具体的服务器运营商。</p>
+
+  <h3>环境变量</h3>
+  <table>
+    <tr><th>变量</th><th>必填</th><th>说明</th></tr>
+    <tr><td><code>DATABASE_URL</code></td><td>否*</td><td>PostgreSQL 连接串（若设置则优先使用；Supabase 事务池用 6543 端口）</td></tr>
+    <tr><td><code>DB_HOST / DB_PORT / DB_NAME / DB_USER / DB_PASSWORD</code></td><td>否*</td><td>分项数据库连接；<strong>与 <code>DATABASE_URL</code> 二选一</strong>即可，两者同时配置时优先用 <code>DATABASE_URL</code></td></tr>
+    <tr><td><code>JWT_SECRET</code></td><td>是</td><td>JWT 签名密钥，生产务必设置为强随机值</td></tr>
+    <tr><td><code>MOCK_FORWARD</code></td><td>否</td><td>仅本地开发设为 <code>true</code>；<strong>线上不要配置</strong></td></tr>
+  </table>
+  <p class="sub">* 数据库连接二选一：设置 <code>DATABASE_URL</code> 即可，<strong>或</strong>设置 <code>DB_HOST / DB_PORT / DB_NAME / DB_USER / DB_PASSWORD</code> 也能连接（如本地 docker Supabase 默认 54322），无需 <code>DATABASE_URL</code>。</p>
+  <img class="shot" src="vercel环境变量.png" alt="Vercel 环境变量配置截图" />
+
+  <h3>数据库部署</h3>
+  <img class="shot" src="supabase创建.png" alt="Supabase 创建数据库截图" />
+  <img class="shot" src="supabase-connect.png" alt="Supabase 连接信息截图" />
+  <img class="shot" src="supabase-direct.png" alt="Supabase 直连配置截图" />
+  <img class="shot" src="supabase-config.png" alt="Supabase 配置截图" />
+
+  <h3>数据库初始化</h3>
+  <p>在 Supabase 的 <strong>SQL Editor</strong> 中执行一次 <code>supabase-schema.sql</code>，会创建全部表、默认角色与超级管理员账号。</p>
+  <pre><code>-- 默认管理员
+--   用户名：admin
+--   密码：  ad123456   （首次登录后请立即修改）</code></pre>
+  <div class="warn">⚠️ <code>supabase-schema.sql</code> 已包含 schema 对齐逻辑（把 SERIAL 序列对齐到当前最大值），重复执行安全；但表中数据不会被清空。</div>
+
+  <h3>构建 / 启动命令</h3>
+  <pre><code># 开发
+npm run dev
+
+# 生产（本地自托管）
+npm run build
+npm run start
+
+# Vercel 自动执行 build，无需手动 start</code></pre>
+
+  <!-- ============ 三、业务配置流程 ============ -->
+  <h2>三、业务配置流程</h2>
+  <p>在后台按以下顺序配置，最终生成供回传归因使用的 <strong>campuuid（包映射）</strong>：</p>
+
+  <div class="flow">
+    <div class="step">① 客户管理</div><span class="arrow">→</span>
+    <div class="step">② 产品管理</div><span class="arrow">→</span>
+    <div class="step">③ 包体管理</div><span class="arrow">→</span>
+    <div class="step">④ 包映射配置</div>
+  </div>
+
+  <h3><span class="num">1</span>客户管理（<code>/dashboard/customers</code>）</h3>
+  <p>录入广告主 / 代理客户基本信息，作为后续数据的归属根节点。</p>
+  <ul>
+    <li><strong>名称</strong>（必填）：客户名称。</li>
+    <li>联系人、联系电话、邮箱、开通日期、备注（选填）。</li>
+  </ul>
+
+
+  <h3><span class="num">2</span>产品管理（<code>/dashboard/products</code>）</h3>
+  <p>在客户下创建推广产品。</p>
+  <ul>
+    <li><strong>归属客户</strong>（必填）：关联第 ① 步的客户。</li>
+    <li><strong>产品名称</strong>（必填）、产品类型（默认 <code>game</code>）、描述、地区、图标、备注。</li>
+  </ul>
+
+
+  <h3><span class="num">3</span>包体管理（<code>/dashboard/packages</code>）</h3>
+  <p>在产品的下创建具体 App 包体。</p>
+  <ul>
+    <li><strong>归属产品</strong>（必填）：关联第 ② 步的产品。</li>
+    <li><strong>包体名称</strong>（必填）、平台（android/ios）、版本、下载地址、<strong>包名（package_name）</strong>、落地页地址。</li>
+  </ul>
+  <img class="shot" src="产品管理.png" alt="产品管理页面截图" />
+
+  <h3><span class="num">4</span>包映射配置（<code>/dashboard/dsp-mapping</code>）</h3>
+  <p>将包体映射到某个 DSP / 渠道，并生成用于回传归因的 <strong>campuuid</strong>。这是业务链路的最终产出。</p>
+  <ul>
+    <li><strong>包体</strong>（必填）：关联第 ③ 步的包体。</li>
+    <li><strong>DSP 名称</strong>（必填，如 Mintegral）、渠道名、DSP 侧包 ID、落地页。</li>
+    <li><strong>campuuid</strong>：广告单元 ID，下游归因与回传匹配的关键标志。</li>
+    <li>状态（active / 停用）、备注。</li>
+  </ul>
+
+  <img class="shot" src="包映射配置.png" alt="包映射配置页面" />
+  <div class="shot-cap">图：包映射配置页面（/dashboard/dsp-mapping）</div>
+
+  <div class="warn">
+    ⚠️ <strong>campuuid 为动态后缀</strong>：我方提供的 campuuid 带动态后缀，例如
+    <code>game_ios_us_0713_wbl_*</code> —— 刚开始可能是 <code>game_ios_us_0713_wbl_cpi</code>，
+    过一段时间会变成 <code>game_ios_us_0713_wbl_cpm</code>。对接方（MMP / 广告主）需<strong>保存当时 clickid 对应的 campuuid</strong>，在回传时原样带回，否则归因会失败。
+  </div>
+
+  <!-- ============ 四、报表拉取 ============ -->
+  <h2>四、报表拉取（暂不实现）</h2>
+
+  <h2>五、相关文档</h2>
+  <ul>
+    <li>对外回传对接文档：<code>/api-doc.html</code>（s2s 对接，给 MMP / 广告主看）</li>
+    <li>数据库建表：<code>supabase-schema.sql</code></li>
+    <li>项目技术说明：<code>AGENTS.md</code> / <code>CLAUDE.md</code></li>
+  </ul>
+</div>
+</body>
+</html>

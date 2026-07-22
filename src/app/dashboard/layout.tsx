@@ -9,7 +9,6 @@ import PackagesPage from './packages/page'
 import DspMappingPage from './dsp-mapping/page'
 import CallbackLogsPage from './callback-logs/page'
 import ReportLogsPage from './report-logs/page'
-import EventsWhitelistPage from './events-whitelist/page'
 import MenusPage from './menus/page'
 import RolesPage from './roles/page'
 import UsersPage from './users/page'
@@ -22,7 +21,6 @@ const PAGE_MAP: Record<string, ComponentType> = {
   '/dashboard/dsp-mapping': DspMappingPage,
   '/dashboard/callback-logs': CallbackLogsPage,
   '/dashboard/report-logs': ReportLogsPage,
-  '/dashboard/events-whitelist': EventsWhitelistPage,
   '/dashboard/menus': MenusPage,
   '/dashboard/roles': RolesPage,
   '/dashboard/users': UsersPage,
@@ -52,7 +50,6 @@ const defaultMenus: MenuItem[] = [
   { id: 4, name: '角色管理', path: '/dashboard/roles', icon: 'shield', parent_id: 2 },
   { id: 5, name: '用户管理', path: '/dashboard/users', icon: 'users', parent_id: 2 },
   { id: 14, name: '操作日志', path: '/dashboard/audit-logs', icon: 'clipboard-list', parent_id: 2 },
-  { id: 15, name: '回传token管理', path: '/dashboard/events-whitelist', icon: 'shield-check', parent_id: 2 },
   { id: 6, name: '产品管理', path: '', icon: 'package', parent_id: 0 },
   { id: 7, name: '客户管理', path: '/dashboard/customers', icon: 'building', parent_id: 6 },
   { id: 8, name: '产品管理', path: '/dashboard/products', icon: 'box', parent_id: 6 },
@@ -219,7 +216,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     'callback-logs': '事件回传日志',
     'report-logs': '报表拉取日志',
     'audit-logs': '操作日志',
-    'events-whitelist': '回传token管理',
   }
 
   // Track opened tabs
@@ -420,6 +416,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {!menusLoaded ? (
             <div className="px-3 py-4 text-[13px] text-slate-500">加载中...</div>
           ) : navItems}
+
+          {/* 文档链接 */}
+          {!collapsed && menusLoaded && (
+            <>
+              <div className="mx-3 my-2 border-t border-white/10" />
+              <div className="px-3 py-0.5">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">文档</span>
+              </div>
+              <a
+                href="/api-doc.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-[14px] text-slate-400 transition-colors hover:text-white hover:bg-white/5"
+              >
+                <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+                <span className="truncate">对外 API 文档</span>
+              </a>
+              <a
+                href="/deployment-guide.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-[14px] text-slate-400 transition-colors hover:text-white hover:bg-white/5"
+              >
+                <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+                </svg>
+                <span className="truncate">部署与操作指南</span>
+              </a>
+            </>
+          )}
         </nav>
 
         {/* Bottom - Collapse */}

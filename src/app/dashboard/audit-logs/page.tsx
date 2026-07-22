@@ -29,7 +29,7 @@ const tableMap: Record<string, string> = {
   products: '产品',
   app_packages: '包体',
   packages_dsp_mapping: '映射',
-  ip_whitelist: '回传token',
+  ip_whitelist: '回传token', // 兼容历史审计记录（旧表名）
 }
 
 export default function AuditLogsPage() {
@@ -82,7 +82,6 @@ export default function AuditLogsPage() {
           <option value="products">产品</option>
           <option value="app_packages">包体</option>
           <option value="packages_dsp_mapping">映射</option>
-          <option value="ip_whitelist">回传token</option>
         </select>
         <input value={filters.username} onChange={e => { setFilters(f => ({ ...f, username: e.target.value })); setPage(1) }}
           placeholder="操作人" className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] text-gray-700 placeholder-gray-400 outline-none w-[140px] focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
