@@ -117,6 +117,7 @@ https://postback.example.com/event?clickid=xxx&amp;campuuid=xxx&amp;event_name=p
       <tr><td><code>currency</code></td><td>特定场景</td><td>货币类型，<code>event_name</code> 为付费相关时必传，其他选填。如：<code>CNY</code>、<code>USD</code>、<code>EUR</code>、<code>JPY</code>、<code>GBP</code></td></tr>
       <tr><td><code>attribu_type</code></td><td>否</td><td>是否归因给本平台，<code>0</code> 或 <code>1</code>；<code>1</code> 为归因给本平台</td></tr>
       <tr><td><code>app_id</code></td><td>否</td><td>应用包名（Android：<code>com.xxx</code>；iOS：<code>idxxx</code>）</td></tr>
+      <tr><td><code>is_pwa</code></td><td>否</td><td>标记该回传对应的包是否为 PWA 包。取值：<code>1</code> 表示是，<code>0</code> 表示否。<strong>计费回调（/install）命中该标记（值为 1）时，本服务会自动补发一次 <code>app_open</code> 激活事件</strong>。</td></tr>
     </tbody>
   </table>
 
@@ -150,8 +151,8 @@ https://postback.example.com/event?clickid=xxx&amp;campuuid=xxx&amp;event_name=p
   </table>
 
   <h2>四、对接示例</h2>
-  <pre><code># 计费回传示例
-https://postback.example.com/install?campuuid=game_ios_us_0713_wbl_cpi&amp;clickid=mtg0a1b2c3d4e5f6g7h8i9j1x2y&amp;idfa=3E0046F7-8BD4-4F3E-9F91-358B137D2BF0&amp;type=s2s&amp;install_time=1486088825
+  <pre><code># 计费回传示例（PWA 包，自动补发 app_open 激活）
+https://postback.example.com/install?campuuid=game_ios_us_0713_wbl_cpi&amp;clickid=mtg0a1b2c3d4e5f6g7h8i9j1x2y&amp;idfa=3E0046F7-8BD4-4F3E-9F91-358B137D2BF0&amp;type=s2s&amp;install_time=1486088825&amp;is_pwa=1
 
 # 非计费回传示例
 https://postback.example.com/event?campuuid=game_ios_us_0713_wbl_cpi&amp;clickid=mtg0a1b2c3d4e5f6g7h8i9j1x2y&amp;idfa=3E0046F7-8BD4-4F3E-9F91-358B137D2BF0&amp;type=s2s&amp;event_time=1486088900&amp;event_name=purchase&amp;event_value={"currency":"USD","revenue":1.9}</code></pre>

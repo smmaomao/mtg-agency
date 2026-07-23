@@ -26,7 +26,20 @@ const defaultForm = {
   product_id: '', name: '', platform: 'android', version: '',
   download_url: '', icon_url: '', package_name: '', landing_page_url: '', remark: '',
 }
-const platforms = ['android', 'ios', 'windows', 'web', 'other']
+const platforms = ['android', 'ios', 'windows', 'web', 'pwa', 'other']
+
+function platformBadge(p: string | null) {
+  const map: Record<string, string> = {
+    android: 'bg-green-500/10 text-green-600',
+    ios: 'bg-blue-500/10 text-blue-600',
+    windows: 'bg-sky-500/10 text-sky-600',
+    web: 'bg-purple-500/10 text-purple-600',
+    pwa: 'bg-fuchsia-500/10 text-fuchsia-600',
+    other: 'bg-gray-500/10 text-gray-600',
+  }
+  const cls = p ? map[p] || 'bg-gray-500/10 text-gray-600' : 'text-gray-300'
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[12px] font-medium ${cls}`}>{p || '未设置'}</span>
+}
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState<AppPackage[]>([])
@@ -128,10 +141,11 @@ export default function PackagesPage() {
         </div>
       ) : (
         <>
-        <div className="border border-gray-200 bg-white overflow-auto">
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-auto">
           <table className="w-full text-left min-w-[800px]">
             <thead>
-              <tr className="border-b border-gray-200 text-[15px] tracking-[0.1em] text-gray-400">
+              <tr className="border-b border-gray-200 bg-gray-50/80 text-[15px] tracking-[0.1em] text-gray-400">
                 <th className="py-2.5 pl-4 font-medium text-[13px] text-black">ID</th>
                 <th className="py-2.5 font-medium text-[13px] text-black">名称</th>
                 <th className="py-2.5 font-medium text-[13px] text-black">产品</th>
@@ -149,7 +163,7 @@ export default function PackagesPage() {
                   <td className="py-2.5 font-medium text-gray-800">{p.name}</td>
                   <td className="py-2.5">{p.product_name || '-'}</td>
                   <td className="py-2.5 font-mono text-gray-400">{p.package_name || '-'}</td>
-                  <td className="py-2.5">{p.platform || '-'}</td>
+                  <td className="py-2.5">{platformBadge(p.platform)}</td>
                   <td className="py-2.5 pr-4 text-right">
                     <button onClick={() => openEdit(p)} className="text-zinc-500 hover:text-gray-800 mr-2">编辑</button>
                     <button onClick={() => handleDelete(p.id)} className="text-zinc-600 hover:text-red-400">删除</button>
@@ -158,6 +172,7 @@ export default function PackagesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
         <Pagination total={total} page={page} pageSize={pageSize} onPageChange={setPage} onPageSizeChange={(size) => { setPageSize(size); setPage(1) }} />
         </>

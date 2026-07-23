@@ -150,6 +150,7 @@ CREATE TABLE IF NOT EXISTS packages_dsp_mapping (
   landing_page_url TEXT,
   status VARCHAR(20) DEFAULT 'active',
   remark TEXT DEFAULT '',
+  is_pwa BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -205,3 +206,14 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   detail TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- PWA 属性迁移：install 上报时是否同时上报激活(app_open)。幂等，可重复执行。
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'mtg_agency' AND table_name = 'packages_dsp_mapping' AND column_name = 'is_pwa'
+  ) THEN
+    ALTER TABLE mtg_agency.packages_dsp_mapping ADD COLUMN is_pwa BOOLEAN NOT NULL DEFAULT FALSE;
+  END IF;
+END $$;

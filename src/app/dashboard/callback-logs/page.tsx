@@ -279,6 +279,10 @@ function EventNameCombobox({ value, onChange }: { value: string; onChange: (v: s
         placeholder="事件名称" className="w-[160px] rounded-md border border-gray-300 bg-white px-3 py-1.5 text-[13px] text-gray-700 placeholder-gray-400 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30" />
       {open && (
         <div className="absolute z-30 mt-1 w-[200px] rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+          <button type="button" onClick={() => { onChange(''); setOpen(false) }}
+            className="flex w-full items-center px-3 py-1.5 text-left text-[13px] text-gray-400 hover:bg-gray-100">
+            全部
+          </button>
           {options.map(opt => (
             <button key={opt} type="button" onClick={() => { onChange(opt); setOpen(false) }}
               className="flex w-full items-center px-3 py-1.5 text-left hover:bg-gray-100">

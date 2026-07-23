@@ -21,6 +21,7 @@ interface DspMapping {
   campuuid: string | null
   landing_page_url: string | null
   status: string
+  is_pwa: boolean
   remark: string | null
   created_at: string
   package_name: string | null
@@ -29,8 +30,18 @@ interface DspMapping {
 
 const defaultForm = {
   customer_id: '', product_id: '', package_id: '',
-  dsp_name: 'Mintegral', campuuid: '', landing_page_url: '', status: 'active', remark: '',
+  dsp_name: 'Mintegral', campuuid: '', landing_page_url: '', status: 'active', is_pwa: false, remark: '',
 }
+
+const platformClassMap: Record<string, string> = {
+  android: 'bg-green-500/10 text-green-600',
+  ios: 'bg-blue-500/10 text-blue-600',
+  windows: 'bg-sky-500/10 text-sky-600',
+  web: 'bg-purple-500/10 text-purple-600',
+  pwa: 'bg-fuchsia-500/10 text-fuchsia-600',
+  other: 'bg-gray-500/10 text-gray-600',
+}
+function platformClass(p: string) { return platformClassMap[p] || 'bg-gray-500/10 text-gray-600' }
 
 export default function DspMappingPage() {
   const [mappings, setMappings] = useState<DspMapping[]>([])
@@ -108,6 +119,7 @@ export default function DspMappingPage() {
       campuuid: m.campuuid || '',
       landing_page_url: m.landing_page_url || '',
       status: m.status || 'active',
+      is_pwa: m.is_pwa ? true : false,
       remark: m.remark || '',
     })
     setShowModal(true)
@@ -125,6 +137,7 @@ export default function DspMappingPage() {
       campuuid: form.campuuid || null,
       landing_page_url: form.landing_page_url || null,
       status: form.status,
+      is_pwa: form.is_pwa,
       remark: form.remark || null,
     }
     const method = editing ? 'PUT' : 'POST'
@@ -154,9 +167,20 @@ export default function DspMappingPage() {
   function onProductChange(val: string) {
     setForm(f => ({ ...f, product_id: val, package_id: '' }))
   }
+  function onPackageChange(val: string) {
+    setForm(f => {
+      const pkg = packages.find(p => String(p.id) === String(val)) || null
+      // 选中的包为 PWA 平台时，自动勾选；非 PWA 包则取消勾选（避免切换包时状态残留）
+      const isPwaPkg = pkg?.platform === 'pwa'
+      return { ...f, package_id: val, is_pwa: isPwaPkg }
+    })
+  }
 
   const sectionTitle = (text: string) => (
-    <div className="mb-1 mt-1 text-[13px] font-semibold tracking-wide text-gray-500">{text}</div>
+    <div className="mb-2 mt-2 flex items-center gap-2">
+      <span className="h-3.5 w-1 rounded-full bg-amber-400" />
+      <span className="text-[13px] font-semibold tracking-wide text-gray-600">{text}</span>
+    </div>
   )
 
   return (
@@ -196,19 +220,27 @@ export default function DspMappingPage() {
                 <th className="py-2.5 font-medium text-[13px] text-black">包体</th>
                 <th className="py-2.5 font-medium text-[13px] text-black">DSP 平台</th>
                 <th className="py-2.5 font-medium text-[13px] text-black">campuuid</th>
+                <th className="py-2.5 font-medium text-[13px] text-black">PWA</th>
                 <th className="py-2.5 font-medium text-[13px] text-black">状态</th>
                 <th className="py-2.5 pr-4 font-medium text-right text-[13px] text-black">操作</th>
               </tr>
             </thead>
             <tbody>
               {mappings.length === 0 ? (
-                <tr><td colSpan={6} className="py-16 text-center text-[15px] text-gray-400">暂无数据</td></tr>
+                <tr><td colSpan={7} className="py-16 text-center text-[15px] text-gray-400">暂无数据</td></tr>
               ) : mappings.map(m => (
                 <tr key={m.id} className="border-b border-gray-200/50 text-[15px] text-gray-700 hover:bg-gray-100 transition-colors">
                   <td className="py-2.5 pl-4 font-mono text-gray-400">{m.id}</td>
                   <td className="py-2.5">{m.package_name || '-'}</td>
                   <td className="py-2.5 font-medium text-gray-800">{m.dsp_name}</td>
                   <td className="py-2.5 font-mono text-gray-400 text-[15px]">{m.campuuid || '-'}</td>
+                  <td className="py-2.5">
+                    {m.is_pwa ? (
+                      <span className="inline-flex items-center rounded-full bg-purple-50 px-2 py-0.5 text-[12px] font-medium text-purple-600">是</span>
+                    ) : (
+                      <span className="text-gray-300">否</span>
+                    )}
+                  </td>
                   <td className="py-2.5">
                     <span className={`inline-flex items-center gap-1 ${m.status === 'active' ? 'text-green-500' : 'text-zinc-500'}`}>
                       <span className={`h-1.5 w-1.5 rounded-full ${m.status === 'active' ? 'bg-green-500' : 'bg-zinc-600'}`} />
@@ -238,6 +270,7 @@ export default function DspMappingPage() {
 
           {/* 上游信息 */}
           {sectionTitle('上游信息')}
+          <div className="space-y-3 rounded-xl border border-amber-100 bg-amber-50/40 p-4">
           <Field label="客户">
             <select value={form.customer_id} onChange={e => onCustomerChange(e.target.value)} className="focus-ring w-full rounded-full border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-800 outline-none" required>
               <option value="">请选择客户</option>
@@ -251,13 +284,26 @@ export default function DspMappingPage() {
             </select>
           </Field>
           <Field label="包">
-            <select value={form.package_id} onChange={e => setForm({ ...form, package_id: e.target.value })} disabled={!form.product_id} className="focus-ring w-full rounded-full border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-800 outline-none disabled:bg-gray-50 disabled:text-gray-300" required>
+            <select value={form.package_id} onChange={e => onPackageChange(e.target.value)} disabled={!form.product_id} className="focus-ring w-full rounded-full border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-800 outline-none transition-colors hover:border-gray-300 disabled:bg-gray-50 disabled:text-gray-300" required>
               <option value="">{form.product_id ? '请选择包' : '请先选择产品'}</option>
               {filteredPackages.map(pk => <option key={pk.id} value={pk.id}>{pk.name}{pk.package_name ? ` (${pk.package_name})` : ''}</option>)}
             </select>
-          </Field>
-          <Field label="包名">
-            <div className="rounded-full border border-gray-200 bg-gray-50 px-3 py-2 text-[13px] text-gray-500">{selectedPkg?.package_name || '选择包后显示'}</div>
+            {selectedPkg && (
+              <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-gray-100 bg-white/70 px-3 py-2">
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${platformClass(selectedPkg.platform || '')}`}>
+                  {selectedPkg.platform || '未设置平台'}
+                </span>
+                <label className="flex cursor-pointer items-center gap-2 text-[12px] text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={form.is_pwa}
+                    onChange={e => setForm({ ...form, is_pwa: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  是否 install 同时上报激活
+                </label>
+              </div>
+            )}
           </Field>
           <Field label="落地页地址">
             <div className="flex items-center gap-2">
@@ -277,15 +323,18 @@ export default function DspMappingPage() {
               </button>
             </div>
           </Field>
+          </div>
 
           {/* 下游信息 */}
           {sectionTitle('下游信息')}
+          <div className="space-y-3 rounded-xl border border-blue-100 bg-blue-50/40 p-4">
           <Field label="对应渠道">
             <select value={form.dsp_name} onChange={e => setForm({ ...form, dsp_name: e.target.value })} className="focus-ring w-full rounded-full border border-gray-200 bg-white px-3 py-2 text-[13px] text-gray-800 outline-none" required>
               <option value="Mintegral">Mintegral</option>
             </select>
           </Field>
           <Field label="campuuid" value={form.campuuid} onChange={e => setForm({ ...form, campuuid: e.target.value })} placeholder="DSP 平台广告计划 ID" />
+          </div>
 
           {/* 其他信息 */}
           {sectionTitle('其他信息')}
