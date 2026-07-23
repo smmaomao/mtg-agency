@@ -9,7 +9,7 @@ import { StatusSelect } from '@/components/StatusSelect'
 
 interface Customer { id: number; name: string }
 interface Product { id: number; name: string; customer_id: number }
-interface AppPackage { id: number; product_id: number; name: string; package_name: string | null; landing_page_url: string | null }
+interface AppPackage { id: number; product_id: number; name: string; package_name: string | null; landing_page_url: string | null; platform: string | null }
 interface DspMapping {
   id: number
   customer_id: number | null
