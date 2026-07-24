@@ -88,11 +88,12 @@ BEGIN
   END LOOP;
 END $$;
 
--- 创建默认管理员用户 (密码: ad123456 的 SHA-256 哈希)
--- 注意：此处使用 SHA-256，实际密码在应用层使用 bcrypt 验证
+-- 创建默认管理员用户 (账号: admin / 密码: ad123456)
+-- 注意：应用层用 bcrypt 校验，下面的是 ad123456 的 bcrypt 哈希（非 SHA-256）。
+-- 使用 DO UPDATE：重跑此脚本时若 admin 已存在，则同步修正密码/状态，避免旧的错误哈希遗留导致登录 401。
 INSERT INTO mtg_agency.admin_users (username, password_hash, real_name, role_id, status)
-VALUES ('admin', '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMQkf9Rmy6C0FQvZgVvHOJCHfA7HOLS', '超级管理员', 1, 1)
-ON CONFLICT (username) DO NOTHING;
+VALUES ('admin', '$2b$10$yVQlLd0RwX2R.oSBiPOUw.Ua1h3VSxUa5ua.fGEu2hPzx3izS66vy', '超级管理员', 1, 1)
+ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash, status = EXCLUDED.status, real_name = EXCLUDED.real_name, role_id = EXCLUDED.role_id;
 
 -- ============================================================
 -- 业务表（原文件缺失，以下为补全）
