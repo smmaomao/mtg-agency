@@ -1,20 +1,24 @@
 -- 管理后台数据库表结构
 -- 请在 Supabase SQL Editor 中执行此文件
+-- 注意：本文件显式使用 mtg_agency schema，不依赖数据库默认 search_path，
+-- 因此在本地/线上（search_path 不同时）都能正确建表。可重复执行（幂等）。
+
+CREATE SCHEMA IF NOT EXISTS mtg_agency;
 
 -- 管理员用户表
-CREATE TABLE IF NOT EXISTS admin_users (
+CREATE TABLE IF NOT EXISTS mtg_agency.admin_users (
   id SERIAL PRIMARY KEY,
   username VARCHAR(50) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   real_name VARCHAR(100) DEFAULT '',
-  role_id INTEGER REFERENCES admin_roles(id) ON DELETE SET NULL,
+  role_id INTEGER REFERENCES mtg_agency.admin_roles(id) ON DELETE SET NULL,
   status SMALLINT DEFAULT 1, -- 1=启用 0=禁用
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 管理员角色表
-CREATE TABLE IF NOT EXISTS admin_roles (
+CREATE TABLE IF NOT EXISTS mtg_agency.admin_roles (
   id SERIAL PRIMARY KEY,
   name VARCHAR(50) UNIQUE NOT NULL,
   description VARCHAR(255) DEFAULT '',
@@ -25,7 +29,7 @@ CREATE TABLE IF NOT EXISTS admin_roles (
 );
 
 -- 管理菜单表
-CREATE TABLE IF NOT EXISTS admin_menus (
+CREATE TABLE IF NOT EXISTS mtg_agency.admin_menus (
   id SERIAL PRIMARY KEY,
   name VARCHAR(50) NOT NULL,
   path VARCHAR(255) DEFAULT '',
@@ -37,12 +41,12 @@ CREATE TABLE IF NOT EXISTS admin_menus (
 );
 
 -- 创建默认超级管理员角色
-INSERT INTO admin_roles (id, name, description, menu_permissions)
+INSERT INTO mtg_agency.admin_roles (id, name, description, menu_permissions)
 VALUES (1, '超级管理员', '拥有所有权限', '{}')
 ON CONFLICT (id) DO NOTHING;
 
 -- 管理菜单种子数据（取自本地库现有菜单结构）
-INSERT INTO admin_menus (id, name, path, icon, parent_id, sort_order) VALUES
+INSERT INTO mtg_agency.admin_menus (id, name, path, icon, parent_id, sort_order) VALUES
   (2, '系统管理', '', 'settings', 0, 2),
   (3, '菜单管理', '/dashboard/menus', 'menu', 2, 5),
   (4, '角色管理', '/dashboard/roles', 'shield', 2, 2),
@@ -86,7 +90,7 @@ END $$;
 
 -- 创建默认管理员用户 (密码: ad123456 的 SHA-256 哈希)
 -- 注意：此处使用 SHA-256，实际密码在应用层使用 bcrypt 验证
-INSERT INTO admin_users (username, password_hash, real_name, role_id, status)
+INSERT INTO mtg_agency.admin_users (username, password_hash, real_name, role_id, status)
 VALUES ('admin', '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMQkf9Rmy6C0FQvZgVvHOJCHfA7HOLS', '超级管理员', 1, 1)
 ON CONFLICT (username) DO NOTHING;
 
@@ -95,7 +99,7 @@ ON CONFLICT (username) DO NOTHING;
 -- ============================================================
 
 -- 客户管理
-CREATE TABLE IF NOT EXISTS customers (
+CREATE TABLE IF NOT EXISTS mtg_agency.customers (
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   contact_person VARCHAR(50) DEFAULT '',
@@ -108,10 +112,10 @@ CREATE TABLE IF NOT EXISTS customers (
 );
 
 -- 产品管理（归属客户）
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS mtg_agency.products (
   id SERIAL PRIMARY KEY,
   name VARCHAR(200) NOT NULL,
-  customer_id INTEGER REFERENCES customers(id) ON DELETE RESTRICT,
+  customer_id INTEGER REFERENCES mtg_agency.customers(id) ON DELETE RESTRICT,
   product_type VARCHAR(20) DEFAULT 'game',
   remark TEXT DEFAULT '',
   icon_url TEXT,
@@ -122,9 +126,9 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 -- 包体管理（归属产品）
-CREATE TABLE IF NOT EXISTS app_packages (
+CREATE TABLE IF NOT EXISTS mtg_agency.app_packages (
   id SERIAL PRIMARY KEY,
-  product_id INTEGER REFERENCES products(id) ON DELETE RESTRICT,
+  product_id INTEGER REFERENCES mtg_agency.products(id) ON DELETE RESTRICT,
   name VARCHAR(200) NOT NULL,
   platform VARCHAR(20) DEFAULT 'android',
   version VARCHAR(50),
@@ -138,11 +142,11 @@ CREATE TABLE IF NOT EXISTS app_packages (
 );
 
 -- 包映射配置（包体 → DSP / 渠道，含 campuuid）
-CREATE TABLE IF NOT EXISTS packages_dsp_mapping (
+CREATE TABLE IF NOT EXISTS mtg_agency.packages_dsp_mapping (
   id SERIAL PRIMARY KEY,
   customer_id INTEGER,
   product_id INTEGER,
-  package_id INTEGER REFERENCES app_packages(id) ON DELETE RESTRICT,
+  package_id INTEGER REFERENCES mtg_agency.app_packages(id) ON DELETE RESTRICT,
   dsp_name VARCHAR(100) NOT NULL,
   channel_name VARCHAR(100),
   dsp_package_id VARCHAR(200),
@@ -156,7 +160,7 @@ CREATE TABLE IF NOT EXISTS packages_dsp_mapping (
 );
 
 -- 事件回传日志
-CREATE TABLE IF NOT EXISTS callback_logs (
+CREATE TABLE IF NOT EXISTS mtg_agency.callback_logs (
   id SERIAL PRIMARY KEY,
   mapping_id INTEGER,
   event_type VARCHAR(50),
@@ -177,7 +181,7 @@ CREATE TABLE IF NOT EXISTS callback_logs (
 );
 
 -- 报表拉取日志
-CREATE TABLE IF NOT EXISTS report_pull_logs (
+CREATE TABLE IF NOT EXISTS mtg_agency.report_pull_logs (
   id SERIAL PRIMARY KEY,
   mapping_id INTEGER,
   report_type VARCHAR(50) DEFAULT 'mintegral_daily',
@@ -196,7 +200,7 @@ CREATE TABLE IF NOT EXISTS report_pull_logs (
 );
 
 -- 操作审计日志
-CREATE TABLE IF NOT EXISTS audit_logs (
+CREATE TABLE IF NOT EXISTS mtg_agency.audit_logs (
   id SERIAL PRIMARY KEY,
   user_id INTEGER,
   username VARCHAR(100) DEFAULT '',
