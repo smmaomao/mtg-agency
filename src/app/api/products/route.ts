@@ -3,8 +3,9 @@ import { NextResponse } from 'next/server'
 import { query, insert, update, del, count } from '@/lib/db'
 import { logAudit } from '@/lib/audit'
 
-// products.countries 是 TEXT 列，前端传数组，pg 会存成 "{US,CN}" 或 JSON 字符串。
-// 这里统一在写入时 JSON.stringify、读出时解析为数组（兼容旧的 {US,CN} 格式），
+// products.countries 在线上是 TEXT、本地是 TEXT[]（环境列类型不一致）。
+// 写入时直接传数组（pg 会自动按列类型存成数组或 "{US,CN}" 串）；
+// 读出时用 toCountryArray 统一解析成数组（兼容数组 / [..] / {US,CN} / 逗号串），
 // 避免前端对字符串调用 .map 报错。
 function toCountryArray(v: any): string[] | null {
   if (v == null) return null
