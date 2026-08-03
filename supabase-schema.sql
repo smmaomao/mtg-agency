@@ -181,6 +181,30 @@ CREATE TABLE IF NOT EXISTS mtg_agency.callback_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 兼容旧库：callbackHandler 会写入 callback_data / gaid / idfa，早期 schema 未建这些列。
+-- 用 ADD COLUMN IF NOT EXISTS 补齐，已存在的列自动跳过，不影响已有数据。
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='mtg_agency' AND table_name='callback_logs' AND column_name='callback_data'
+  ) THEN
+    ALTER TABLE mtg_agency.callback_logs ADD COLUMN callback_data TEXT;
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='mtg_agency' AND table_name='callback_logs' AND column_name='gaid'
+  ) THEN
+    ALTER TABLE mtg_agency.callback_logs ADD COLUMN gaid VARCHAR(200);
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='mtg_agency' AND table_name='callback_logs' AND column_name='idfa'
+  ) THEN
+    ALTER TABLE mtg_agency.callback_logs ADD COLUMN idfa VARCHAR(200);
+  END IF;
+END $$;
+
 -- 报表拉取日志
 CREATE TABLE IF NOT EXISTS mtg_agency.report_pull_logs (
   id SERIAL PRIMARY KEY,
