@@ -160,50 +160,39 @@ CREATE TABLE IF NOT EXISTS mtg_agency.packages_dsp_mapping (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 事件回传日志
+-- 事件回传日志（以本地完整结构为准：含 callback_data / idfa / gaid、外键、6 个索引）
 CREATE TABLE IF NOT EXISTS mtg_agency.callback_logs (
-  id SERIAL PRIMARY KEY,
-  mapping_id INTEGER,
-  event_type VARCHAR(50),
-  event_name VARCHAR(100),
-  click_id VARCHAR(200),
-  request_url TEXT,
-  request_body TEXT,
-  response_body TEXT,
-  response_code INTEGER,
-  response_time INTEGER,
-  http_status INTEGER,
-  status VARCHAR(20) DEFAULT 'pending',
-  pixel_id VARCHAR(200),
-  package_name VARCHAR(200),
-  standard_event_code VARCHAR(100),
-  ip_address VARCHAR(50),
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  id BIGSERIAL NOT NULL,
+  mapping_id BIGINT NULL,
+  event_type CHARACTER VARYING(100) NOT NULL,
+  request_body TEXT NULL,
+  response_body TEXT NULL,
+  http_status INTEGER NULL,
+  status CHARACTER VARYING(20) NULL DEFAULT 'success',
+  ip_address CHARACTER VARYING(50) NULL,
+  created_at TIMESTAMPTZ NULL DEFAULT NOW(),
+  click_id CHARACTER VARYING(200) NULL,
+  event_name CHARACTER VARYING(200) NULL,
+  callback_data TEXT NULL,
+  response_code INTEGER NULL,
+  response_time INTEGER NULL,
+  pixel_id CHARACTER VARYING(200) NULL,
+  request_url TEXT NULL,
+  package_name CHARACTER VARYING(200) NULL,
+  standard_event_code CHARACTER VARYING(100) NULL,
+  idfa CHARACTER VARYING(255) NULL,
+  gaid CHARACTER VARYING(255) NULL,
+  CONSTRAINT callback_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT callback_logs_mapping_id_fkey FOREIGN KEY (mapping_id)
+    REFERENCES mtg_agency.packages_dsp_mapping (id) ON DELETE SET NULL
 );
 
--- 兼容旧库：callbackHandler 会写入 callback_data / gaid / idfa，早期 schema 未建这些列。
--- 用 ADD COLUMN IF NOT EXISTS 补齐，已存在的列自动跳过，不影响已有数据。
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='mtg_agency' AND table_name='callback_logs' AND column_name='callback_data'
-  ) THEN
-    ALTER TABLE mtg_agency.callback_logs ADD COLUMN callback_data TEXT;
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='mtg_agency' AND table_name='callback_logs' AND column_name='gaid'
-  ) THEN
-    ALTER TABLE mtg_agency.callback_logs ADD COLUMN gaid VARCHAR(200);
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_schema='mtg_agency' AND table_name='callback_logs' AND column_name='idfa'
-  ) THEN
-    ALTER TABLE mtg_agency.callback_logs ADD COLUMN idfa VARCHAR(200);
-  END IF;
-END $$;
+CREATE INDEX IF NOT EXISTS idx_callback_logs_mapping ON mtg_agency.callback_logs USING btree (mapping_id);
+CREATE INDEX IF NOT EXISTS idx_callback_logs_event ON mtg_agency.callback_logs USING btree (event_type);
+CREATE INDEX IF NOT EXISTS idx_callback_logs_created ON mtg_agency.callback_logs USING btree (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_callback_logs_click_id ON mtg_agency.callback_logs USING btree (click_id);
+CREATE INDEX IF NOT EXISTS idx_callback_logs_event_name ON mtg_agency.callback_logs USING btree (event_name);
+CREATE INDEX IF NOT EXISTS idx_callback_logs_pixel_id ON mtg_agency.callback_logs USING btree (pixel_id);
 
 -- 报表拉取日志
 CREATE TABLE IF NOT EXISTS mtg_agency.report_pull_logs (
